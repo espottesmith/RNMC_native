@@ -1,5 +1,12 @@
-with (import <nixpkgs> {});
+with (import /home/danielbarter/nixpkgs {});
 
-mkShell {
-  buildInputs = [ clang ];
+mkShell rec {
+  buildInputs = [ clang
+                  gsl
+                  lldb
+                  gdb
+                  valgrind
+                ];
+
+  CPATH = lib.makeSearchPathOutput "dev" "include" [ clang.libc gsl ];
 }
