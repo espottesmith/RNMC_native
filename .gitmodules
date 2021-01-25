@@ -1,0 +1,3 @@
+[submodule "mrnet"]
+	path = python/mrnet
+	url = https://github.com/materialsproject/mrnet

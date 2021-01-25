@@ -11,10 +11,10 @@ char *factor_two_postfix = "/factor_two";
 char *factor_duplicate_postfix = "/factor_duplicate";
 char *rates_postfix = "/rates";
 char *initial_state_postfix = "/initial_state";
+char *number_of_dependents_postfix = "/number_of_dependents";
+char *dependents_postfix = "/dependents";
 
-
-
-ReactionNetwork *new_reaction_network(char *directory) {
+ReactionNetwork *new_reaction_network(char *directory, bool logging) {
   // currently segfaults if files don't exist.
   ReactionNetwork *rnp = malloc(sizeof(ReactionNetwork));
   char *end;
@@ -199,8 +199,51 @@ ReactionNetwork *new_reaction_network(char *directory) {
   }
   fclose(file);
 
+
+  // read number_of_dependents
+  unsigned long int number_of_dependents_sum = 0;
+  int max_number_of_dependents = 0;
+  rnp->number_of_dependents = malloc(sizeof(int) * rnp->number_of_reactions);
+
+  end = stpcpy(path, directory);
+  stpcpy(end, number_of_dependents_postfix);
+  file = fopen(path, "r");
+  for (i = 0; i < rnp->number_of_reactions; i++) {
+    return_code = fscanf(file, "%d\n", rnp->number_of_dependents + i);
+    number_of_dependents_sum += rnp->number_of_dependents[i];
+    if (rnp->number_of_dependents[i] > max_number_of_dependents)
+      max_number_of_dependents = rnp->number_of_dependents[i];
+  }
+  rnp->max_number_of_dependents = max_number_of_dependents;
+  fclose(file);
+
+  // read dependents
+  int *dependents_values = malloc(sizeof(int) * number_of_dependents_sum);
+  rnp->dependents = malloc(sizeof(int *) * rnp->number_of_reactions);
+
+  end = stpcpy(path, directory);
+  stpcpy(end, dependents_postfix);
+  file = fopen(path, "r");
+  int *p = dependents_values;
+  for (i = 0; i < rnp->number_of_reactions; i++) {
+    rnp->dependents[i] = p;
+    for (j = 0; j < rnp->number_of_dependents[i]; j++) {
+      return_code = fscanf(file, "%d ", rnp->dependents[i] + j);
+      p += 1;
+    }
+    return_code = fscanf(file, "\n");
+  }
+  fclose(file);
+
+  if (logging)
+    puts("finished reading in network files");
+
   initialize_propensities(rnp);
-  build_dependency_graph(rnp);
+  if (logging) {
+    puts("finished computing initial propensities");
+  }
+
+
   return rnp;
 }
 
@@ -213,20 +256,11 @@ void free_reaction_network(ReactionNetwork *rnp) {
   free(rnp->products);
   free(rnp->rates);
   free(rnp->initial_state);
+  free(rnp->number_of_dependents);
+  free(rnp->dependents[0]);
+  free(rnp->dependents);
+  free(rnp->initial_propensities);
 
-
-  if (rnp->initial_propensities)
-    free(rnp->initial_propensities);
-
-  if (rnp->number_of_dependents)
-    free(rnp->number_of_dependents);
-
-  if (rnp->dependents) {
-
-    free(rnp->dependents[0]);
-    free(rnp->dependents);
-
-  }
   free(rnp);
 
 }
@@ -274,121 +308,6 @@ void initialize_propensities(ReactionNetwork *rnp) {
   }
 }
 
-
-
-void build_dependency_graph(ReactionNetwork *rnp) {
-
-  // allocate number_of_dependents array
-  rnp->number_of_dependents = malloc(rnp->number_of_reactions * sizeof(int));
-
-  // i,j store the numbers of reactants and products of reactions
-  // m and n are reaction indices
-  // mspecies and nspecies are species indices
-  int i, j, m, n, mspecies, nspecies;
-
-  // for a reaction m, flag[n] == 1 if reaction n depends on m
-  //                   flag[n] == 0 if reaction n does not depend on m
-  int *flag = malloc(rnp->number_of_reactions * sizeof(int));
-
-  for (m = 0; m < rnp->number_of_reactions; m++) {
-
-    // initialize flag for reaction m
-    for (n = 0; n < rnp->number_of_reactions; n++) flag[n] = 0;
-
-    // find all reactions n with reactant a reactant of m
-    for (i = 0; i < rnp->number_of_reactants[m]; i++) {
-      mspecies = rnp->reactants[m][i];
-      for (n = 0; n < rnp->number_of_reactions; n++) {
-        for (j = 0; j < rnp->number_of_reactants[n]; j++) {
-          nspecies = rnp->reactants[n][j];
-          if (mspecies == nspecies) flag[n] = 1;
-        }
-      }
-    }
-
-
-    // find all reactions n with reactant a product of m
-    for (i = 0; i < rnp->number_of_products[m]; i++) {
-      mspecies = rnp->products[m][i];
-      for (n = 0; n < rnp->number_of_reactions; n++) {
-        for (j = 0; j < rnp->number_of_reactants[n]; j++) {
-          nspecies = rnp->reactants[n][j];
-          if (mspecies == nspecies) flag[n] = 1;
-        }
-      }
-    }
-
-    rnp->number_of_dependents[m] = 0;
-    for (n = 0; n < rnp->number_of_reactions; n++)
-      if (flag[n]) rnp->number_of_dependents[m]++;
-  }
-
-  free(flag);
-
-  // computing the maximum number of dependents over all reactions
-  int max_dependents = 0;
-  for (m = 0; m < rnp->number_of_reactions; m++) {
-    if( rnp->number_of_dependents[m] > max_dependents )
-      max_dependents = rnp->number_of_dependents[m];
-  }
-
-  rnp->max_number_of_dependents = max_dependents;
-
-  // allocating dependents array
-  rnp->dependents = malloc(sizeof(int *) * rnp->number_of_reactions);
-  int *dependents_values = malloc(sizeof(int)
-                                 * max_dependents
-                                 * rnp->number_of_reactions);
-
-  for (int d = 0; d < max_dependents * rnp->number_of_reactions; d++)
-    dependents_values[d] = -1;
-
-  for (m = 0; m < rnp->number_of_reactions; m++) {
-    rnp->dependents[m] = dependents_values + m * max_dependents;
-  }
-
-  // we zero out the number_of_dependents because we use it
-  // as an array of counters while initializing dependents
-
-  for (m = 0; m < rnp->number_of_reactions; m++)
-    rnp->number_of_dependents[m] = 0;
-
-  // k loop ensures dependency was not already stored
-
-  int k;
-
-  for (m = 0; m < rnp->number_of_reactions; m++) {
-    for (i = 0; i < rnp->number_of_reactants[m]; i++) {
-      mspecies = rnp->reactants[m][i];
-      for (n = 0; n < rnp->number_of_reactions; n++) {
-        for (j = 0; j < rnp->number_of_reactants[n]; j++) {
-          nspecies = rnp->reactants[n][j];
-          if (mspecies == nspecies) {
-            for (k = 0; k < rnp->number_of_dependents[m]; k++)
-              if (n == rnp->dependents[m][k]) break;
-            if (k == rnp->number_of_dependents[m])
-              rnp->dependents[m][rnp->number_of_dependents[m]++] = n;
-          }
-        }
-      }
-    }
-
-    for (i = 0; i < rnp->number_of_products[m]; i++) {
-      mspecies = rnp->products[m][i];
-      for (n = 0; n < rnp->number_of_reactions; n++) {
-        for (j = 0; j < rnp->number_of_reactants[n]; j++) {
-          nspecies = rnp->reactants[n][j];
-          if (mspecies == nspecies) {
-            for (k = 0; k < rnp->number_of_dependents[m]; k++)
-              if (n == rnp->dependents[m][k]) break;
-            if (k == rnp->number_of_dependents[m])
-              rnp->dependents[m][rnp->number_of_dependents[m]++] = n;
-          }
-        }
-      }
-    }
-  }
-}
 
 
 int reaction_network_to_file(ReactionNetwork *rnp, char *directory) {
@@ -501,7 +420,7 @@ int reaction_network_to_file(ReactionNetwork *rnp, char *directory) {
   }
   fclose(file);
 
-  // save rates
+  // save initial_state
   end = stpcpy(path, directory);
   stpcpy(end, initial_state_postfix);
   file = fopen(path, "w");
@@ -509,6 +428,28 @@ int reaction_network_to_file(ReactionNetwork *rnp, char *directory) {
     fprintf(file, "%d\n", rnp->initial_state[i]);
   }
   fclose(file);
+
+  // save number_of_dependents
+  end = stpcpy(path, directory);
+  stpcpy(end, number_of_dependents_postfix);
+  file = fopen(path, "w");
+  for (i = 0; i < rnp->number_of_reactions; i++) {
+    fprintf(file, "%d\n", rnp->number_of_dependents[i]);
+  }
+  fclose(file);
+
+  // save dependents
+  end = stpcpy(path, directory);
+  stpcpy(end, dependents_postfix);
+  file = fopen(path, "w");
+  for (i = 0; i < rnp->number_of_reactions; i++) {
+    for (j = 0; j < rnp->number_of_dependents[i]; j++) {
+      fprintf(file, "%d ", rnp->dependents[i][j]);
+    }
+    fprintf(file, "\n");
+  }
+  fclose(file);
+
 
   return 0;
 }
@@ -564,6 +505,17 @@ bool reaction_networks_differ(ReactionNetwork *rnpa, ReactionNetwork *rnpb) {
   for (i = 0; i < rnpa->number_of_species; i++) {
     if (rnpa->initial_state[i] != rnpb->initial_state[i])
       return true;
+  }
+
+  for (i = 0; i < rnpa->number_of_reactions; i++) {
+    if (rnpa->number_of_dependents[i] != rnpb->number_of_dependents[i])
+      return true;
+  }
+
+  for (i = 0; i < rnpa->number_of_reactions; i++) {
+    for (j = 0; j < rnpa->number_of_dependents[i]; j++)
+      if (rnpa->dependents[i][j] != rnpb->dependents[i][j])
+        return true;
   }
 
   return false;

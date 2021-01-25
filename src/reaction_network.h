@@ -49,12 +49,11 @@ typedef struct reactionNetwork {
 
 } ReactionNetwork;
 
-ReactionNetwork *new_reaction_network(char *directory);
+ReactionNetwork *new_reaction_network(char *directory, bool logging);
 void free_reaction_network(ReactionNetwork *rnp);
 
 double compute_propensity(ReactionNetwork *rnp, int *state, int reaction);
 void initialize_propensities(ReactionNetwork *rnp);
-void build_dependency_graph(ReactionNetwork *rnp);
 
 // serialize a reaction network to the disk (not including initial propensities
 // and dependency graph). Each attribute is stored in directory/attribute_name

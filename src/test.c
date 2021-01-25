@@ -72,7 +72,7 @@ void test_serialization() {
   char *ronalds_network_dir = "./ronalds_network";
   char *test_network_dir = "./test_network";
 
-  ReactionNetwork *rnp = new_reaction_network(ronalds_network_dir);
+  ReactionNetwork *rnp = new_reaction_network(ronalds_network_dir, false);
   reaction_network_to_file(rnp, test_network_dir);
   char *cmd = "diff -r --exclude=simulation_histories ./ronalds_network ./test_network > /dev/null";
   int status = system(cmd);
@@ -88,7 +88,7 @@ void test_serialization() {
          ANSI_COLOR_RESET);
 
 
-  ReactionNetwork *rnp_copy = new_reaction_network(test_network_dir);
+  ReactionNetwork *rnp_copy = new_reaction_network(test_network_dir, false);
 
   if (reaction_networks_differ(rnp, rnp_copy)) {
     puts(ANSI_COLOR_RED
@@ -108,7 +108,7 @@ void test_serialization() {
 
 void run_test_simulation() {
   char *ronalds_network_dir = "./ronalds_network";
-  ReactionNetwork *rnp = new_reaction_network(ronalds_network_dir);
+  ReactionNetwork *rnp = new_reaction_network(ronalds_network_dir, false);
   Simulation *sp = new_simulation(rnp, 42, tree);
   run_until(sp, 5);
   simulation_history_to_file(sp);
