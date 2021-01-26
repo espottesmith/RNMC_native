@@ -25,5 +25,5 @@ sa = SimulationAnalyser(rnsd, network_folder)
 
 
 LEDC_index = rnsd.find_index_from_mol_graph('./mrnet/test_files/reaction_network_files/LEDC.xyz',0)
-sa.pp_pathways(LEDC_index)
-
+Li2CO3_index = rnsd.find_index_from_mol_graph('./li2co3_0.xyz', 0)
+sa.generate_pathway_report(Li2CO3_index)

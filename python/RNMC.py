@@ -1,12 +1,52 @@
 import math
 import numpy as np
+import networkx as nx
 import os
 import pickle
+from copy import deepcopy
 
 from pymatgen.core.structure import Molecule
 from pymatgen.analysis.graphs import MoleculeGraph
 from pymatgen.analysis.local_env import OpenBabelNN
 from pymatgen.analysis.fragmenter import metal_edge_extender
+
+
+def visualize_molecule_entry(molecule_entry, path):
+
+    atom_colors = {
+        'O' : 'red',
+        'H' : 'gray',
+        'C' : 'black',
+        'Li' : 'purple'
+        }
+
+    graph = deepcopy(molecule_entry.graph).to_undirected()
+
+    nx.set_node_attributes(graph, "", 'label')
+    nx.set_node_attributes(graph, 'filled', 'style')
+    nx.set_node_attributes(graph, "circle", 'shape')
+    nx.set_node_attributes(graph, "0.2", 'width')
+    nx.set_node_attributes(
+        graph,
+        dict(enumerate([atom_colors[a] for a in molecule_entry.species])),
+        'color')
+
+
+    charge = molecule_entry.charge
+    agraph = nx.nx_agraph.to_agraph(graph)
+    if charge != 0:
+        agraph.add_node(
+            'charge',
+            label = str(charge),
+            fontsize = '25.0',
+            shape = 'box',
+            color = 'gray',
+            style = 'dashed, rounded')
+
+    agraph.layout()
+    agraph.draw(path, format='pdf')
+
+
 
 
 class ReactionNetworkSerializationData:
@@ -40,6 +80,19 @@ class ReactionNetworkSerializationData:
                                 for product_index in reaction['products']])
         dG = str(reaction['free_energy'])
         return (reactants + " -> " + products).ljust(50) + dG
+
+    def visualize_molecules(self):
+        folder = self.network_folder + '/molecule_diagrams'
+        if os.path.isdir(folder):
+            return
+
+        os.mkdir(folder)
+        for index in range(self.number_of_species):
+            molecule_entry = self.species_data[index]
+            visualize_molecule_entry(
+                molecule_entry,
+            folder + '/' + str(index) + '.pdf')
+
 
     def find_index_from_mol_graph(self, mol_graph_file_path, charge):
         """
@@ -104,8 +157,8 @@ class ReactionNetworkSerializationData:
             product_indices = [self.species_to_index[product]
                                for product in reaction.product_ids]
 
-            forward_free_energy = reaction.free_energy()["free_energy_A"]
-            backward_free_energy = reaction.free_energy()["free_energy_B"]
+            forward_free_energy = reaction.free_energy_A
+            backward_free_energy = reaction.free_energy_B
 
 
             index_to_reaction.append({'reactants' : reactant_indices,
@@ -413,13 +466,76 @@ class SimulationAnalyser:
 
         pathways = self.reaction_pathways_dict[target_species_index]
 
-        for _, unique_pathway in sorted(pathways.items(),
-                                        key = lambda item: -item[1]['frequency']):
+        for _, unique_pathway in sorted(
+                pathways.items(),
+                key = lambda item: -item[1]['frequency']):
 
             print(str(unique_pathway['frequency']) + " occurrences:")
             for reaction_index in unique_pathway['pathway']:
                 print(self.rnsd.pp_reaction(reaction_index))
             print()
+
+    def generate_pathway_report(self, target_species_index):
+        self.rnsd.visualize_molecules()
+        folder = self.rnsd.network_folder + '/report_' + str(target_species_index)
+        os.mkdir(folder)
+
+        with open(folder + '/report.tex','w') as f:
+            if target_species_index not in self.reaction_pathways_dict:
+                self.extract_reaction_pathways(target_species_index)
+
+            pathways = self.reaction_pathways_dict[target_species_index]
+
+            f.write('\\documentclass{article}\n')
+            f.write('\\usepackage{graphicx}')
+            f.write('\\usepackage[margin=1cm]{geometry}')
+            f.write('\\pagenumbering{gobble}')
+            f.write('\\begin{document}\n')
+
+            for _, unique_pathway in sorted(
+                    pathways.items(),
+                    key = lambda item: -item[1]['frequency']):
+
+                f.write(str(unique_pathway['frequency']) +
+                        " occurrences:\n")
+
+                for reaction_index in unique_pathway['pathway']:
+                    reaction = self.rnsd.index_to_reaction[reaction_index]
+                    f.write('$$\n')
+                    first = True
+                    for reactant_index in reaction['reactants']:
+                        if first:
+                            first = False
+                        else:
+                            f.write('+\n')
+
+                        f.write(
+                            '\\raisebox{-.5\\height}{'
+                            + '\\includegraphics[scale=0.2]{../molecule_diagrams/'
+                            + str(reactant_index)
+                            + '.pdf}}\n')
+
+                    f.write('\\to\n')
+
+                    first = True
+                    for product_index in reaction['products']:
+                        if first:
+                            first = False
+                        else:
+                            f.write('+\n')
+
+                        f.write(
+                            '\\raisebox{-.5\\height}{'
+                            + '\\includegraphics[scale=0.2]{../molecule_diagrams/'
+                            + str(product_index)
+                            + '.pdf}}\n')
+
+                    f.write('$$')
+                    f.write('\n\n\n')
+
+                f.write('\\newpage\n')
+
+            f.write('\\end{document}')
 
 
 
