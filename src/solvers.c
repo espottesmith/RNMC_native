@@ -79,7 +79,8 @@ void update_many_solve_linear(void *solve_linearp,
                               double *new_propensities) {
   SolveLinear *p = (SolveLinear *) solve_linearp;
   for (int i = 0; i < number_of_updates; i++) {
-    update_solve_linear(p, reactions_to_update[i], new_propensities[i]);
+    int reaction_to_update = reactions_to_update[i];
+    update_solve_linear(p, reaction_to_update, new_propensities[reaction_to_update]);
   }
 }
 
@@ -232,8 +233,11 @@ void update_many_solve_tree(void *solve_treep,
                          int number_of_updates,
                          int *reactions_to_update,
                          double *new_propensities) {
-  for (int i = 0; i < number_of_updates; i++)
-    update_solve_tree(solve_treep, reactions_to_update[i], new_propensities[i]);
+  for (int i = 0; i < number_of_updates; i++) {
+    SolveTree *p = (SolveTree *) solve_treep;
+    int reaction_to_update = reactions_to_update[i];
+    update_solve_tree(p, reaction_to_update, new_propensities[reaction_to_update]);
+  }
 }
 
 int find_solve_tree(SolveTree *p, double value) {

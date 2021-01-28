@@ -35,7 +35,9 @@ typedef struct simulation {
   int step; // number of reactions which have occoured
   Solve *solver;
   SimulationHistory *history;
-  double *new_propensities;
+  // buffer for storing propensities to update
+  // length is the number of reactions
+  double *propensity_buffer;
 } Simulation;
 
 Simulation *new_simulation(ReactionNetwork *rnp,

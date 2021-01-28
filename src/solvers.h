@@ -25,13 +25,11 @@ typedef struct solveGeneral {
                  int reaction_to_update,
                  double new_propensity);
 
-  // this is slightly differnt to the update_many in spparks
   // reactions_to_update is a pointer to the indices to update
-  // new_propensities is a pointer to the new propensities
   void (*update_many)(void *p,
                      int number_of_updates,
                      int *reactions_to_update,
-                     double *new_propensities);
+                     double *propensity_buffer);
 
   int (*event)(void *p, double *dtp);
 
@@ -65,7 +63,7 @@ typedef struct solveLinear {
   void (*update_many)(void *solve_linearp,
                      int number_of_updates,
                      int *reactions_to_update,
-                     double *now_propensities);
+                     double *propensity_buffer);
 
   int (*event)(void *solve_linearp, double *dtp);
 
@@ -99,7 +97,7 @@ void update_solve_linear(void *solve_linearp,
 void update_many_solve_linear(void *solve_linearp,
                               int number_of_updates,
                               int *reactions_to_update,
-                              double *new_propensities);
+                              double *propensity_buffer);
 
 int event_solve_linear(void *solve_linearp, double *dtp);
 
@@ -119,7 +117,7 @@ typedef struct solveTree {
   void (*update_many)(void *solve_treep,
                      int number_of_updates,
                      int *reactions_to_update,
-                     double *now_propensities);
+                     double *propensity_buffer);
 
   int (*event)(void *solve_treep, double *dtp);
 
@@ -158,7 +156,7 @@ void update_solve_tree(void *solve_treep,
 void update_many_solve_tree(void *solve_treep,
                          int number_of_updates,
                          int *reactions_to_update,
-                         double *new_propensities);
+                         double *propensity_buffer);
 
 int event_solve_tree(void *solve_treep, double *dtp);
 

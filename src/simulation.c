@@ -81,7 +81,7 @@ Simulation *new_simulation(ReactionNetwork *rnp,
                                   rnp->initial_propensities);
 
   sp->history = new_simulation_history();
-  sp->new_propensities = malloc(sizeof(double) * rnp->max_number_of_dependents);
+  sp->propensity_buffer = malloc(sizeof(double) * rnp->number_of_reactions);
 
   return sp;
 }
@@ -91,7 +91,7 @@ void free_simulation(Simulation *sp) {
   free(sp->state);
   free_solve(sp->solver);
   free_simulation_history(sp->history);
-  free(sp->new_propensities);
+  free(sp->propensity_buffer);
   free(sp);
 }
 
@@ -100,6 +100,7 @@ bool step(Simulation *sp) {
   double dt;
   bool dead_end = false;
   int next_reaction = sp->solver->event(sp->solver, &dt);
+  int reaction_index;
 
   if (next_reaction < 0) dead_end = true;
   else {
@@ -117,19 +118,22 @@ bool step(Simulation *sp) {
       sp->state[sp->rn->products[next_reaction][m]]++;
 
     // update propensities
-    int number_of_updates = sp->rn->number_of_dependents[next_reaction];
+    DependentsNode *dnp = get_dependency_node(sp->rn, next_reaction);
+    int number_of_updates = dnp->number_of_dependents;
+    int *dependents = dnp->dependents;
 
 
     for (m = 0; m < number_of_updates; m++) {
-      sp->new_propensities[m] = compute_propensity(sp->rn,
-                                               sp->state,
-                                               sp->rn->dependents[next_reaction][m]);
+      reaction_index = dependents[m];
+      sp->propensity_buffer[reaction_index] = compute_propensity(sp->rn,
+                                                                 sp->state,
+                                                                 reaction_index);
     }
 
     sp->solver->update_many(sp->solver,
                             number_of_updates,
-                            sp->rn->dependents[next_reaction],
-                            sp->new_propensities);
+                            dependents,
+                            sp->propensity_buffer);
 
   }
 

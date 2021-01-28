@@ -9,6 +9,7 @@ let pythonEnv = python38.withPackages (
           ]);
 in mkShell rec {
   buildInputs = [ clang
+                  gcc
                   gsl
                   lldb
                   gdb

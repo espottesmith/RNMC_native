@@ -8,10 +8,21 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <stdbool.h>
+#include <pthread.h>
+
+typedef struct dependentsNode {
+  int number_of_dependents; // number of reactions that depend on current reaction.
+  // number_of_dependents is set to -1 if reaction hasn't been encountered before
+  int *dependents; // reactions which depend on current reaction.
+  // dependents is set to NULL if reaction hasn't been encountered before
+  pthread_mutex_t mutex; // mutex needed if simulation thread needs to compute the dependents
+} DependentsNode;
 
 // struct for storing the static reaction network state which
 // will be shared across all simulation instances
 
+DependentsNode *new_dependents_node();
+void free_dependents_node(DependentsNode *dnp);
 
 typedef struct reactionNetwork {
 
@@ -39,18 +50,17 @@ typedef struct reactionNetwork {
   double *initial_propensities; // initial propensities for all the reactions
 
 
-  // allocated filled out by buildDependencyGraph. Initially set to 0
-  int *number_of_dependents; // number of reactions that depend on each reaction
-  int max_number_of_dependents;
-  int **dependents;
-  // dependents[i] is the list of reactions whose propensities
-  // need to be updated after reaction i occours
-
-
+  // dependency graph. List of DependencyNodes number_of_reactions long.
+  DependentsNode *dependency_graph;
 } ReactionNetwork;
 
 ReactionNetwork *new_reaction_network(char *directory, bool logging);
 void free_reaction_network(ReactionNetwork *rnp);
+
+DependentsNode *get_dependency_node(ReactionNetwork *rnp, int index);
+void compute_dependency_node(ReactionNetwork *rnp, int reaction);
+void initialize_dependency_graph(ReactionNetwork *rnp, bool logging);
+
 
 double compute_propensity(ReactionNetwork *rnp, int *state, int reaction);
 void initialize_propensities(ReactionNetwork *rnp);

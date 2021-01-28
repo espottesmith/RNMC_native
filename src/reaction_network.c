@@ -14,6 +14,19 @@ char *initial_state_postfix = "/initial_state";
 char *number_of_dependents_postfix = "/number_of_dependents";
 char *dependents_postfix = "/dependents";
 
+void initialize_dependents_node(DependentsNode *dnp) {
+  dnp->number_of_dependents = -1;
+  dnp->dependents = NULL;
+  pthread_mutex_init(&dnp->mutex, NULL);
+}
+
+void free_dependents_node(DependentsNode *dnp) {
+  // we don't free dnp because they get initialized as a whole chunk
+  if (dnp->dependents)
+    free(dnp->dependents);
+  pthread_mutex_destroy(&dnp->mutex);
+}
+
 ReactionNetwork *new_reaction_network(char *directory, bool logging) {
   // currently segfaults if files don't exist.
   ReactionNetwork *rnp = malloc(sizeof(ReactionNetwork));
@@ -200,45 +213,10 @@ ReactionNetwork *new_reaction_network(char *directory, bool logging) {
   fclose(file);
 
 
-  // read number_of_dependents
-  unsigned long int number_of_dependents_sum = 0;
-  int max_number_of_dependents = 0;
-  rnp->number_of_dependents = malloc(sizeof(int) * rnp->number_of_reactions);
-
-  end = stpcpy(path, directory);
-  stpcpy(end, number_of_dependents_postfix);
-  file = fopen(path, "r");
-  for (i = 0; i < rnp->number_of_reactions; i++) {
-    return_code = fscanf(file, "%d\n", rnp->number_of_dependents + i);
-    number_of_dependents_sum += rnp->number_of_dependents[i];
-    if (rnp->number_of_dependents[i] > max_number_of_dependents)
-      max_number_of_dependents = rnp->number_of_dependents[i];
-  }
-  rnp->max_number_of_dependents = max_number_of_dependents;
-  fclose(file);
-
-  // read dependents
-  int *dependents_values = malloc(sizeof(int) * number_of_dependents_sum);
-  rnp->dependents = malloc(sizeof(int *) * rnp->number_of_reactions);
-
-  end = stpcpy(path, directory);
-  stpcpy(end, dependents_postfix);
-  file = fopen(path, "r");
-  int *p = dependents_values;
-  for (i = 0; i < rnp->number_of_reactions; i++) {
-    rnp->dependents[i] = p;
-    for (j = 0; j < rnp->number_of_dependents[i]; j++) {
-      return_code = fscanf(file, "%d ", rnp->dependents[i] + j);
-      p += 1;
-    }
-    return_code = fscanf(file, "\n");
-  }
-  fclose(file);
-
-  if (logging)
-    puts("finished reading in network files");
+  initialize_dependency_graph(rnp, logging);
 
   initialize_propensities(rnp);
+  // TODO: move this logging into initialize_propensites
   if (logging) {
     puts("finished computing initial propensities");
   }
@@ -256,12 +234,104 @@ void free_reaction_network(ReactionNetwork *rnp) {
   free(rnp->products);
   free(rnp->rates);
   free(rnp->initial_state);
-  free(rnp->number_of_dependents);
-  free(rnp->dependents[0]);
-  free(rnp->dependents);
   free(rnp->initial_propensities);
 
+  int i; // reaction index
+  for (i = 0; i < rnp->number_of_reactions; i++)
+    free_dependents_node(rnp->dependency_graph + i);
+
+  free(rnp->dependency_graph);
+
   free(rnp);
+
+}
+
+DependentsNode *get_dependency_node(ReactionNetwork *rnp, int index) {
+    DependentsNode *node = rnp->dependency_graph + index;
+
+    pthread_mutex_lock(&node->mutex);
+    if (! node->dependents)
+      compute_dependency_node(rnp, index);
+
+    pthread_mutex_unlock(&node->mutex);
+    return node;
+}
+
+void compute_dependency_node(ReactionNetwork *rnp, int index) {
+  DependentsNode *node = rnp->dependency_graph + index;
+
+  int number_of_dependents_count = 0;
+  int j; // reaction index
+  int l, m, n; // reactant and product indices
+
+  for (j = 0; j < rnp->number_of_reactions; j++) {
+    bool flag = false;
+
+    for (l = 0; l < rnp->number_of_reactants[j]; l++) {
+      for (m = 0; m < rnp->number_of_reactants[index]; m++) {
+        if (rnp->reactants[j][l] == rnp->reactants[index][m])
+          flag = true;
+      }
+
+      for (n = 0; n < rnp->number_of_products[index]; n++) {
+        if (rnp->reactants[j][l] == rnp->products[index][n])
+          flag = true;
+      }
+    }
+
+    if (flag)
+      number_of_dependents_count++;
+  }
+
+  node->number_of_dependents = number_of_dependents_count;
+  node->dependents = malloc(sizeof(int)
+                            * number_of_dependents_count);
+  int dependents_counter = 0;
+  int current_reaction = 0;
+  while (dependents_counter < number_of_dependents_count) {
+    bool flag = false;
+    for (l = 0; l < rnp->number_of_reactants[current_reaction]; l++) {
+      for (m = 0; m < rnp->number_of_reactants[index]; m++) {
+        if (rnp->reactants[current_reaction][l] == rnp->reactants[index][m])
+          flag = true;
+      }
+
+      for (n = 0; n < rnp->number_of_products[index]; n++) {
+        if (rnp->reactants[current_reaction][l] == rnp->products[index][n])
+          flag = true;
+      }
+    }
+
+    if (flag) {
+      node->dependents[dependents_counter] = current_reaction;
+      dependents_counter++;
+    }
+    current_reaction++;
+  }
+}
+
+void initialize_dependency_graph(ReactionNetwork *rnp, bool logging) {
+
+ if (logging)
+    puts("started initializing dependency graph");
+
+  int i; // reaction index
+  rnp->dependency_graph = malloc(sizeof(DependentsNode)
+                                 * rnp->number_of_reactions);
+
+  for (i = 0; i < rnp->number_of_reactions; i++) {
+    initialize_dependents_node(rnp->dependency_graph + i);
+  }
+
+  // this is how you would initialize the dependency graph for large reaction
+  // networks. Doing so is completely inpractical for large networks.
+  // for (i = 0; i < rnp->number_of_reactions; i++) {
+  //   compute_dependency_node(rnp, i);
+  // }
+
+ if (logging)
+    puts("finished initializing dependency graph");
+
 
 }
 
@@ -429,27 +499,6 @@ int reaction_network_to_file(ReactionNetwork *rnp, char *directory) {
   }
   fclose(file);
 
-  // save number_of_dependents
-  end = stpcpy(path, directory);
-  stpcpy(end, number_of_dependents_postfix);
-  file = fopen(path, "w");
-  for (i = 0; i < rnp->number_of_reactions; i++) {
-    fprintf(file, "%d\n", rnp->number_of_dependents[i]);
-  }
-  fclose(file);
-
-  // save dependents
-  end = stpcpy(path, directory);
-  stpcpy(end, dependents_postfix);
-  file = fopen(path, "w");
-  for (i = 0; i < rnp->number_of_reactions; i++) {
-    for (j = 0; j < rnp->number_of_dependents[i]; j++) {
-      fprintf(file, "%d ", rnp->dependents[i][j]);
-    }
-    fprintf(file, "\n");
-  }
-  fclose(file);
-
 
   return 0;
 }
@@ -505,17 +554,6 @@ bool reaction_networks_differ(ReactionNetwork *rnpa, ReactionNetwork *rnpb) {
   for (i = 0; i < rnpa->number_of_species; i++) {
     if (rnpa->initial_state[i] != rnpb->initial_state[i])
       return true;
-  }
-
-  for (i = 0; i < rnpa->number_of_reactions; i++) {
-    if (rnpa->number_of_dependents[i] != rnpb->number_of_dependents[i])
-      return true;
-  }
-
-  for (i = 0; i < rnpa->number_of_reactions; i++) {
-    for (j = 0; j < rnpa->number_of_dependents[i]; j++)
-      if (rnpa->dependents[i][j] != rnpb->dependents[i][j])
-        return true;
   }
 
   return false;

@@ -189,58 +189,6 @@ class ReactionNetworkSerializationData:
 
         self.species_data = species_data
 
-    def __extract_dependency_graph(self):
-        """
-        First, construct a mapping, reactant_to_reactions,
-        which sends each species index to a list
-        of reaction indices which have the corresponding species as a
-        reactant.
-
-        Then construct a dependency graph, which maps a reaction index
-        to a list of reaction indicies whose propensities need to be updated
-        after the reaction occours.
-
-        reactant_to_reactions: a dictionary mapping a species index to
-        all the reaction indices which have that species as a reactant.
-
-        """
-        reactant_to_reactions = {}
-        for reaction_index in range(self.number_of_reactions):
-            reaction = self.index_to_reaction[reaction_index]
-
-            for reactant_index in reaction['reactants']:
-                if reactant_index in reactant_to_reactions:
-                    reactant_to_reactions[reactant_index].append(reaction_index)
-                else:
-                    reactant_to_reactions[reactant_index] = [reaction_index]
-
-        if self.logging:
-            print("computed reactant to reactions")
-
-        dependency_graph = {}
-
-        for reaction_index in range(self.number_of_reactions):
-            reaction = self.index_to_reaction[reaction_index]
-
-            impacted_reactions = []
-            for species_index in reaction['reactants'] + reaction['products']:
-                impacted_reactions.extend(reactant_to_reactions[species_index])
-
-            # we need to delete duplicates
-            # storing lists is way more memory efficient than storing sets
-            dependency_graph[reaction_index] = list(set(impacted_reactions))
-
-        self.dependency_graph = dependency_graph
-
-
-    def clear_dependency_graph(self):
-        """
-        The dependency graph has a large memory footprint and is not needed
-        after serialization.
-        """
-        self.dependency_graph = None
-
-
     def __init__(self,reaction_network,
                  # list of triples (path to molecule.xyz, charge, number)
                  initial_state_data,
@@ -271,10 +219,6 @@ class ReactionNetworkSerializationData:
         if logging:
             print("extracted index reaction mapping")
 
-        self.__extract_dependency_graph()
-        if self.logging:
-            print("computed dependency graph")
-
         self.initial_state = np.zeros(self.number_of_species)
         for (path, charge, count) in initial_state_data:
             index = self.find_index_from_mol_graph(path, charge)
@@ -301,8 +245,6 @@ def serialize_reaction_network(rnsd):
     factor_duplicate_postfix = "/factor_duplicate"
     rates_postfix = "/rates"
     initial_state_postfix = "/initial_state"
-    number_of_dependents_postfix = "/number_of_dependents"
-    dependents_postfix = "/dependents"
 
     folder = rnsd.network_folder
 
@@ -351,17 +293,6 @@ def serialize_reaction_network(rnsd):
         for i in range(rnsd.number_of_species):
             f.write(str(int(rnsd.initial_state[i])) + '\n')
 
-    with open(folder + number_of_dependents_postfix, 'w') as f:
-        for i in range(rnsd.number_of_reactions):
-            f.write(str(len(rnsd.dependency_graph[i])) + '\n')
-
-    with open(folder + dependents_postfix, 'w') as f:
-        for i in range(rnsd.number_of_reactions):
-            for j in rnsd.dependency_graph[i]:
-                f.write(str(j) + ' ')
-            f.write('\n')
-
-    rnsd.clear_dependency_graph()
     with open(folder + "/rnsd.pickle",'wb') as f:
         pickle.dump(rnsd, f)
 
@@ -489,6 +420,7 @@ class SimulationAnalyser:
             f.write('\\documentclass{article}\n')
             f.write('\\usepackage{graphicx}')
             f.write('\\usepackage[margin=1cm]{geometry}')
+            f.write('\\usepackage{amsmath}')
             f.write('\\pagenumbering{gobble}')
             f.write('\\begin{document}\n')
 
@@ -515,7 +447,9 @@ class SimulationAnalyser:
                             + str(reactant_index)
                             + '.pdf}}\n')
 
-                    f.write('\\to\n')
+                    f.write('\\xrightarrow{'
+                            + ('%.2f' % reaction['free_energy'])
+                            + '}\n')
 
                     first = True
                     for product_index in reaction['products']:

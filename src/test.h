@@ -16,6 +16,6 @@
 void test_samplers();
 void test_serialization();
 void run_tests();
-void test_disk_speed();
 void run_simulation();
 void run_test_dispatcher();
+void test_long_simulation_history();

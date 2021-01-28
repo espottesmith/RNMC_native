@@ -29,43 +29,6 @@ void test_samplers() {
          ANSI_COLOR_RESET);
 }
 
-void test_disk_speed() {
-
-  printf("testing disk speed....\n");
-  Sampler *samplerp = new_sampler(42);
-  unsigned long int length = 100000000;
-  char *path = "/tmp/RNMC_speed_test";
-  double *array_a = malloc(sizeof(double) * length);
-  double *array_b = malloc(sizeof(double) * length);
-  unsigned long int i;
-  for (unsigned long int i = 0; i < length; i++) {
-    array_a[i] = samplerp->generate(samplerp);
-  }
-  printf("initialized array_a\n");
-  int t;
-  int status;
-  FILE *file = fopen(path, "w");
-  t = time(NULL);
-  for (i = 0; i < length; i++)
-    fprintf(file, "%e\n", array_a[i]);
-  t = time(NULL) - t;
-  printf("100 million doubles write time %d seconds\n",t);
-  fclose(file);
-
-  file = fopen(path, "r");
-  t = time(NULL);
-  for (i = 0; i < length; i++)
-    status = fscanf(file, "%lf\n", array_b + i);
-  t = time(NULL) - t;
-  printf("100 million doubles read time %d seconds\n",t);
-  fclose(file);
-
-  status = system("rm /tmp/RNMC_speed_test");
-  free_sampler(samplerp);
-  free(array_a);
-  free(array_b);
-
-}
 
 // currently segfaults if not run from the correct directory
 void test_serialization() {
@@ -163,11 +126,54 @@ void run_test_dispatcher() {
 
 }
 
+void test_long_simulation_history() {
+  double inital_propensities[] = {.1, .1, .8, .1, .4, .1, .0};
+  int length = 42069;
+  int values[42069];
+  double dt;
+  int sample;
+  int i, j;
+  Solve *q = new_solve(tree, 42, 7, inital_propensities);
+  SimulationHistory *sh = new_simulation_history();
+
+  for (i = 0; i < length; i++) {
+    sample = q->event(q, &dt);
+    values[i] = sample;
+    insert_reaction(sh, sample);
+  }
+
+  i = 0;
+  bool flag = true;
+  Chunk *chunk = sh->first_chunk;
+  while (chunk) {
+    for (j = 0; j < chunk->next_free_index; j++) {
+      if (chunk->data[j] != values[i])
+        flag = false;
+      i++;
+    }
+    chunk = chunk->next_chunk;
+  }
+
+  if (flag)
+    puts(ANSI_COLOR_GREEN
+         "passed: history readback correct"
+         ANSI_COLOR_RESET);
+  else
+        puts(ANSI_COLOR_RED
+         "failed: history readback incorrect"
+         ANSI_COLOR_RESET);
+
+
+  free_solve(q);
+  free_simulation_history(sh);
+}
+
 void run_tests(char *test_materials_dir) {
   int status = chdir(test_materials_dir);
   test_samplers();
   test_serialization();
   run_test_simulation();
+  test_long_simulation_history();
   run_test_dispatcher();
 }
 

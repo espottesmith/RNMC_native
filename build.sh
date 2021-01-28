@@ -14,12 +14,12 @@ help_message() {
 
 if [ $# -eq 1 ]; then
     if [ $1 == "test" ]; then
-        clang $src_files ./src/test.c -g -pthread -lgsl -lgslcblas -lm -o test
+        gcc $src_files ./src/test.c -g -pthread -lgsl -lgslcblas -lm -o test
         exit 0
     fi
 
     if [ $1 == "RNMC" ]; then
-        clang $src_files ./src/RNMC.c -g -pthread -lgsl -lgslcblas -lm -o RNMC
+        gcc $src_files ./src/RNMC.c -g -pthread -lgsl -lgslcblas -lm -o RNMC
         exit 0
     fi
 
