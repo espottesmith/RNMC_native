@@ -11,8 +11,6 @@ char *factor_two_postfix = "/factor_two";
 char *factor_duplicate_postfix = "/factor_duplicate";
 char *rates_postfix = "/rates";
 char *initial_state_postfix = "/initial_state";
-char *number_of_dependents_postfix = "/number_of_dependents";
-char *dependents_postfix = "/dependents";
 
 void initialize_dependents_node(DependentsNode *dnp) {
   dnp->number_of_dependents = -1;

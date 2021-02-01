@@ -1,10 +1,10 @@
 # RNMC
 
-RNMC is a program for simulating reaction networks heavily inspired by [SPPARKS](https://spparks.sandia.gov/).
+RNMC is a program for simulating reaction networks heavily inspired by [SPPARKS](https://spparks.sandia.gov/). RNMC is designed to run large numbers of simulations of a fixed system (fixed reaction network and fixed initial state) in parallel.
 
 ### Dependencies
 
-RNMC depends on [GSL](https://www.gnu.org/software/gsl/) for pseudo random number generation. Make sure that `gsl-major-minor/include` is in your `CPATH`.
+RNMC depends on [GSL](https://www.gnu.org/software/gsl/) for pseudo random number generation. Make sure that `CPATH`, `LIBRARY_PATH` and `LD_LIBRARY_PATH` are set appropriately if you aren't using a version of GSL bundled with your system.
 
 ### Building
 

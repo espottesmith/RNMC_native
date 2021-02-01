@@ -46,6 +46,7 @@ Dispatcher *new_dispatcher(char *reaction_network_dir,
 
   Dispatcher *dp = malloc(sizeof(Dispatcher));
   dp->reaction_network_dir = reaction_network_dir;
+  dp->logging = logging;
   dp->rn = new_reaction_network(reaction_network_dir, logging);
 
   dp->simulation_params = simulation_params;
@@ -103,7 +104,6 @@ Dispatcher *new_dispatcher(char *reaction_network_dir,
 
 
   dp->threads = malloc(sizeof(pthread_t) * dp->number_of_threads);
-  dp->logging = logging;
   return dp;
 }
 
