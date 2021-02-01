@@ -39,6 +39,8 @@ ReactionNetwork *new_reaction_network(char *directory, bool logging) {
   int step = 2; // hard coding reactions having <= 2 reactants and products
 
   rnp->dir = directory;
+  rnp->logging = logging;
+
 
   // read number_of_species
   end = stpcpy(path, directory);
@@ -212,14 +214,9 @@ ReactionNetwork *new_reaction_network(char *directory, bool logging) {
   }
   fclose(file);
 
-
-  initialize_dependency_graph(rnp, logging);
-
+  initialize_dependency_graph(rnp);
   initialize_propensities(rnp);
-  // TODO: move this logging into initialize_propensites
-  if (logging) {
-    puts("finished computing initial propensities");
-  }
+
 
 
   return rnp;
@@ -258,6 +255,7 @@ DependentsNode *get_dependency_node(ReactionNetwork *rnp, int index) {
 }
 
 void compute_dependency_node(ReactionNetwork *rnp, int index) {
+
   DependentsNode *node = rnp->dependency_graph + index;
 
   int number_of_dependents_count = 0;
@@ -308,11 +306,15 @@ void compute_dependency_node(ReactionNetwork *rnp, int index) {
     }
     current_reaction++;
   }
+  if (rnp->logging)
+    printf("computed dependents of reaction %d\n",index);
+
+
 }
 
-void initialize_dependency_graph(ReactionNetwork *rnp, bool logging) {
+void initialize_dependency_graph(ReactionNetwork *rnp) {
 
- if (logging)
+ if (rnp->logging)
     puts("started initializing dependency graph");
 
   int i; // reaction index
@@ -323,13 +325,13 @@ void initialize_dependency_graph(ReactionNetwork *rnp, bool logging) {
     initialize_dependents_node(rnp->dependency_graph + i);
   }
 
-  // this is how you would initialize the dependency graph for large reaction
-  // networks. Doing so is completely inpractical for large networks.
+  // this is how you would precompute the dependency graph.
+  // Doing so is completely inpractical for large networks.
   // for (i = 0; i < rnp->number_of_reactions; i++) {
   //   compute_dependency_node(rnp, i);
   // }
 
- if (logging)
+ if (rnp->logging)
     puts("finished initializing dependency graph");
 
 
@@ -375,6 +377,9 @@ void initialize_propensities(ReactionNetwork *rnp) {
   for (int reaction = 0; reaction < rnp->number_of_reactions; reaction++) {
     rnp->initial_propensities[reaction] =
       compute_propensity(rnp, rnp->initial_state, reaction);
+  }
+  if (rnp->logging) {
+    puts("finished computing initial propensities");
   }
 }
 

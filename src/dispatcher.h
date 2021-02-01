@@ -3,6 +3,9 @@
 #include <pthread.h>
 #include <errno.h>
 
+// seed 0 is special. It is the value returned when the seed queue is empty
+// this means that you should never have 0 as a seed value because as soon
+// as it gets passed to a simulator thread, it will terminate.
 typedef struct seedQueue {
   unsigned long int *seeds;
   int number_of_seeds; // length of seeds array
@@ -44,14 +47,12 @@ typedef struct simulatorPayload {
   SolveType type;
   SeedQueue *sq;
   double time_cutoff;
-  bool logging;
 } SimulatorPayload;
 
 SimulatorPayload *new_simulator_payload(ReactionNetwork *rn,
                                         SolveType type,
                                         SeedQueue *sq,
-                                        double time_cutoff,
-                                        bool logging
+                                        double time_cutoff
                                         );
 
 void free_simulator_payload(SimulatorPayload *sp);

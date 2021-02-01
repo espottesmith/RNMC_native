@@ -117,10 +117,16 @@ void free_dispatcher(Dispatcher *dp) {
 void run_dispatcher(Dispatcher *dp) {
   int i;
   SimulatorPayload *sp;
+  if (dp->logging)
+    printf("spawning %d threads\n",dp->number_of_threads);
+
   for (i = 0; i < dp->number_of_threads; i++) {
-    sp = new_simulator_payload(dp->rn, tree, dp->sq, dp->time_cutoff, dp->logging);
+    sp = new_simulator_payload(dp->rn, tree, dp->sq, dp->time_cutoff);
     pthread_create(dp->threads + i, NULL, run_simulator, (void *)sp);
   }
+
+  if (dp->logging)
+    puts("dispatcher waiting for threads to terminate");
 
   for (i = 0; i < dp->number_of_threads; i++) {
     pthread_join(dp->threads[i],NULL);
@@ -132,8 +138,7 @@ void run_dispatcher(Dispatcher *dp) {
 SimulatorPayload *new_simulator_payload(ReactionNetwork *rn,
                                         SolveType type,
                                         SeedQueue *sq,
-                                        double time_cutoff,
-                                        bool logging
+                                        double time_cutoff
                                         ) {
 
   SimulatorPayload *spp = malloc(sizeof(SimulatorPayload));
@@ -141,7 +146,6 @@ SimulatorPayload *new_simulator_payload(ReactionNetwork *rn,
   spp->type = type;
   spp->sq = sq;
   spp->time_cutoff = time_cutoff;
-  spp->logging = logging;
   return spp;
 }
 
@@ -155,10 +159,13 @@ void *run_simulator(void *simulator_payload) {
   unsigned long int seed = get_seed(sp->sq);
   while (seed > 0) {
     Simulation *simulation = new_simulation(sp->rn, seed, sp->type);
+
     run_until(simulation, sp->time_cutoff);
     simulation_history_to_file(simulation);
-    if (sp->logging)
-      printf("simulation %ld finished: %d steps\n",seed, simulation->step);
+
+    // this is nice for small batches, but unwieldy for large batches
+    // if (sp->rn->logging)
+    //  printf("simulation %ld finished: %d steps\n",seed, simulation->step);
     free_simulation(simulation);
     seed = get_seed(sp->sq);
   }

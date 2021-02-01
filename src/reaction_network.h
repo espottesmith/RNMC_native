@@ -15,7 +15,7 @@ typedef struct dependentsNode {
   // number_of_dependents is set to -1 if reaction hasn't been encountered before
   int *dependents; // reactions which depend on current reaction.
   // dependents is set to NULL if reaction hasn't been encountered before
-  pthread_mutex_t mutex; // mutex needed if simulation thread needs to compute the dependents
+  pthread_mutex_t mutex; // mutex needed because simulation thread initialize dependents
 } DependentsNode;
 
 // struct for storing the static reaction network state which
@@ -52,6 +52,7 @@ typedef struct reactionNetwork {
 
   // dependency graph. List of DependencyNodes number_of_reactions long.
   DependentsNode *dependency_graph;
+  bool logging;
 } ReactionNetwork;
 
 ReactionNetwork *new_reaction_network(char *directory, bool logging);
@@ -59,7 +60,7 @@ void free_reaction_network(ReactionNetwork *rnp);
 
 DependentsNode *get_dependency_node(ReactionNetwork *rnp, int index);
 void compute_dependency_node(ReactionNetwork *rnp, int reaction);
-void initialize_dependency_graph(ReactionNetwork *rnp, bool logging);
+void initialize_dependency_graph(ReactionNetwork *rnp);
 
 
 double compute_propensity(ReactionNetwork *rnp, int *state, int reaction);

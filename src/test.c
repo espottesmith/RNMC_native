@@ -50,7 +50,6 @@ void test_serialization() {
          "passed: file to ReactionNetwork to file test"
          ANSI_COLOR_RESET);
 
-
   ReactionNetwork *rnp_copy = new_reaction_network(test_network_dir, false);
 
   if (reaction_networks_differ(rnp, rnp_copy)) {
