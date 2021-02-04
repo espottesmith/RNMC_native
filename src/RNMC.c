@@ -8,6 +8,10 @@ int main(int argc, char **argv) {
     Dispatcher *dp = new_dispatcher(argv[1],
                                     argv[2],
                                     true);
+    if (!dp) {
+      puts("dispatcher wasn't created");
+      pthread_exit(NULL);
+    }
     run_dispatcher(dp);
     free_dispatcher(dp);
   }

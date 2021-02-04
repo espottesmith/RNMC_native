@@ -104,6 +104,13 @@ void run_test_simulation() {
 
 void run_test_dispatcher() {
   Dispatcher *dp = new_dispatcher("./ronalds_network","./simulation_params", false);
+    if (!dp) {
+      puts(ANSI_COLOR_RED
+           "failed: dispatcher wasn't created"
+           ANSI_COLOR_RESET);
+      pthread_exit(NULL);
+    }
+
   run_dispatcher(dp);
   free_dispatcher(dp);
 

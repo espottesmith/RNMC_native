@@ -37,5 +37,8 @@ folder containing the following files:
 - `number_of_threads`:
 - `seeds`: list of seeds
 - `time_cutoff`: how long to run the simulations (in simulation time)
+- `step_cutoff`: how many steps to run the simulation
+
+Note: if `step_cutoff` is present, it will be used over `time_cutoff`
 
 See `./test_materials/simulation_params` for an example.
