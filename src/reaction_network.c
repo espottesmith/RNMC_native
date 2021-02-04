@@ -47,9 +47,10 @@ ReactionNetwork *new_reaction_network(char *directory, bool logging) {
   if (!file) {
     printf("new_reaction_network: cannot open %s",path);
     return NULL;
+  } else {
+    return_code = fscanf(file, "%d\n", &rnp->number_of_species);
+    fclose(file);
   }
-  return_code = fscanf(file, "%d\n", &rnp->number_of_species);
-  fclose(file);
 
   // read number_of_reactions
   end = stpcpy(path, directory);
@@ -58,9 +59,10 @@ ReactionNetwork *new_reaction_network(char *directory, bool logging) {
   if (!file) {
     printf("new_reaction_network: cannot open %s",path);
     return NULL;
+  } else {
+    return_code = fscanf(file, "%d\n", &rnp->number_of_reactions);
+    fclose(file);
   }
-  return_code = fscanf(file, "%d\n", &rnp->number_of_reactions);
-  fclose(file);
 
   // read number_of_reactants
   rnp->number_of_reactants = malloc(sizeof(int) * rnp->number_of_reactions);
@@ -70,12 +72,13 @@ ReactionNetwork *new_reaction_network(char *directory, bool logging) {
   if (!file) {
     printf("new_reaction_network: cannot open %s",path);
     return NULL;
+  } else {
+    for (i = 0; i < rnp->number_of_reactions; i++) {
+      return_code = fscanf(file, "%d\n", rnp->number_of_reactants + i);
+    }
+    fclose(file);
   }
 
-  for (i = 0; i < rnp->number_of_reactions; i++) {
-    return_code = fscanf(file, "%d\n", rnp->number_of_reactants + i);
-  }
-  fclose(file);
 
   // read reactants
   int *reactants_values = malloc(sizeof(int) * 2 * rnp->number_of_reactions);
@@ -93,15 +96,16 @@ ReactionNetwork *new_reaction_network(char *directory, bool logging) {
   if (!file) {
     printf("new_reaction_network: cannot open %s",path);
     return NULL;
+  } else {
+    for (i = 0; i < rnp->number_of_reactions; i++) {
+      for (j = 0; j < rnp->number_of_reactants[i]; j++) {
+        return_code = fscanf(file, "%d ", rnp->reactants[i] + j);
+      }
+      return_code = fscanf(file, "\n");
+    }
+    fclose(file);
   }
 
-  for (i = 0; i < rnp->number_of_reactions; i++) {
-    for (j = 0; j < rnp->number_of_reactants[i]; j++) {
-      return_code = fscanf(file, "%d ", rnp->reactants[i] + j);
-    }
-    return_code = fscanf(file, "\n");
-  }
-  fclose(file);
 
   // read number_of_products
   rnp->number_of_products = malloc(sizeof(int) * rnp->number_of_reactions);
@@ -111,12 +115,12 @@ ReactionNetwork *new_reaction_network(char *directory, bool logging) {
   if (!file) {
     printf("new_reaction_network: cannot open %s",path);
     return NULL;
+  } else {
+    for (i = 0; i < rnp->number_of_reactions; i++) {
+      return_code = fscanf(file, "%d\n", rnp->number_of_products + i);
+    }
+    fclose(file);
   }
-
-  for (i = 0; i < rnp->number_of_reactions; i++) {
-    return_code = fscanf(file, "%d\n", rnp->number_of_products + i);
-  }
-  fclose(file);
 
   // read products
   int *products_values = malloc(sizeof(int) * 2 * rnp->number_of_reactions);
@@ -135,16 +139,15 @@ ReactionNetwork *new_reaction_network(char *directory, bool logging) {
   if (!file) {
     printf("new_reaction_network: cannot open %s",path);
     return NULL;
-  }
-
-  for (i = 0; i < rnp->number_of_reactions; i++) {
-    for (j = 0; j < rnp->number_of_products[i]; j++) {
-      return_code = fscanf(file, "%d ", rnp->products[i] + j);
+  } else {
+    for (i = 0; i < rnp->number_of_reactions; i++) {
+      for (j = 0; j < rnp->number_of_products[i]; j++) {
+        return_code = fscanf(file, "%d ", rnp->products[i] + j);
+      }
+      return_code = fscanf(file, "\n");
     }
-    return_code = fscanf(file, "\n");
+    fclose(file);
   }
-  fclose(file);
-
 
   // read factor_zero
   end = stpcpy(path, directory);
@@ -153,10 +156,10 @@ ReactionNetwork *new_reaction_network(char *directory, bool logging) {
   if (!file) {
     printf("new_reaction_network: cannot open %s",path);
     return NULL;
+  } else {
+    return_code = fscanf(file, "%lf\n", &rnp->factor_zero);
+    fclose(file);
   }
-
-  return_code = fscanf(file, "%lf\n", &rnp->factor_zero);
-  fclose(file);
 
   // read factor_two
   end = stpcpy(path, directory);
@@ -165,10 +168,10 @@ ReactionNetwork *new_reaction_network(char *directory, bool logging) {
   if (!file) {
     printf("new_reaction_network: cannot open %s",path);
     return NULL;
+  } else {
+    return_code = fscanf(file, "%lf\n", &rnp->factor_two);
+    fclose(file);
   }
-
-  return_code = fscanf(file, "%lf\n", &rnp->factor_two);
-  fclose(file);
 
   // read factor_duplicate
   end = stpcpy(path, directory);
@@ -177,10 +180,10 @@ ReactionNetwork *new_reaction_network(char *directory, bool logging) {
   if (!file) {
     printf("new_reaction_network: cannot open %s",path);
     return NULL;
+  } else {
+    return_code = fscanf(file, "%lf\n", &rnp->factor_duplicate);
+    fclose(file);
   }
-
-  return_code = fscanf(file, "%lf\n", &rnp->factor_duplicate);
-  fclose(file);
 
   // read rates
   rnp->rates = malloc(sizeof(double) * rnp->number_of_reactions);
@@ -190,12 +193,13 @@ ReactionNetwork *new_reaction_network(char *directory, bool logging) {
   if (!file) {
     printf("new_reaction_network: cannot open %s",path);
     return NULL;
+  } else {
+    for (i = 0; i < rnp->number_of_reactions; i++) {
+      return_code = fscanf(file, "%lf\n", rnp->rates + i);
+    }
+    fclose(file);
   }
 
-  for (i = 0; i < rnp->number_of_reactions; i++) {
-    return_code = fscanf(file, "%lf\n", rnp->rates + i);
-  }
-  fclose(file);
 
   // read initial_state
   rnp->initial_state = malloc(sizeof(int) * rnp->number_of_species);
@@ -205,17 +209,16 @@ ReactionNetwork *new_reaction_network(char *directory, bool logging) {
   if (!file) {
     printf("new_reaction_network: cannot open %s",path);
     return NULL;
-  }
+  } else {
 
-  for (i = 0; i < rnp->number_of_species; i++) {
-    return_code = fscanf(file, "%d\n", rnp->initial_state + i);
+    for (i = 0; i < rnp->number_of_species; i++) {
+      return_code = fscanf(file, "%d\n", rnp->initial_state + i);
+    }
+    fclose(file);
   }
-  fclose(file);
 
   initialize_dependency_graph(rnp);
   initialize_propensities(rnp);
-
-
 
   return rnp;
 }
