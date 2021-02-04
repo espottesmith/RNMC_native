@@ -7,8 +7,13 @@
 
 #define CHUNK_SIZE 1024
 
+typedef struct historyElement {
+    int reaction;
+    double time;
+} HistoryElement;
+
 typedef struct chunk {
-  int data[CHUNK_SIZE];
+  HistoryElement data[CHUNK_SIZE];
   int next_free_index;
   struct chunk *next_chunk;
 } Chunk;
@@ -24,7 +29,7 @@ typedef struct simulationHistory {
 
 SimulationHistory *new_simulation_history();
 void free_simulation_history(SimulationHistory *simulation_historyp);
-void insert_reaction(SimulationHistory *simulation_historyp, int reaction);
+void insert_history_element(SimulationHistory *simulation_historyp, int reaction, double time);
 int simulation_history_length(SimulationHistory *shp);
 
 typedef struct simulation {
@@ -32,7 +37,7 @@ typedef struct simulation {
   unsigned long int seed;
   int *state;
   double time;
-  int step; // number of reactions which have occoured
+  int step; // number of reactions which have occurred
   Solve *solver;
   SimulationHistory *history;
   // buffer for storing propensities to update

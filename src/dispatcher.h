@@ -17,6 +17,7 @@ SeedQueue *new_seed_queue(int number_of_seeds, unsigned long int *seeds);
 void free_seed_queue(SeedQueue *sqp);
 unsigned long int get_seed(SeedQueue *sqp);
 
+typedef enum cutoffType { time_cutoff, step_cutoff } CutoffType;
 
 typedef struct dispatcher {
   char *reaction_network_dir;
@@ -29,11 +30,12 @@ typedef struct dispatcher {
   // seeds which is a list of new line delimited seeds
   // time_cutoff is how long to run each simulation for (in simulation time)
   SeedQueue *sq;
-
   int number_of_threads; // length of threads array
   pthread_t *threads;
   bool logging; // logging enabled
+  CutoffType cutoff_type;
   double time_cutoff;
+  int step_cutoff;
 
 } Dispatcher;
 
@@ -46,13 +48,17 @@ typedef struct simulatorPayload {
   ReactionNetwork *rn;
   SolveType type;
   SeedQueue *sq;
+  CutoffType cutoff_type;
   double time_cutoff;
+  int step_cutoff;
 } SimulatorPayload;
 
 SimulatorPayload *new_simulator_payload(ReactionNetwork *rn,
                                         SolveType type,
                                         SeedQueue *sq,
-                                        double time_cutoff
+                                        CutoffType cutoff_type,
+                                        double time_cutoff,
+                                        int step_cutoff
                                         );
 
 void free_simulator_payload(SimulatorPayload *sp);

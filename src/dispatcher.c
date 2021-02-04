@@ -4,6 +4,8 @@ char *number_of_seeds_postfix = "/number_of_seeds";
 char *number_of_threads_postfix = "/number_of_threads";
 char *seeds_postfix = "/seeds";
 char *time_cutoff_postfix = "/time_cutoff";
+char *step_cutoff_postfix = "/step_cutoff";
+
 
 SeedQueue *new_seed_queue(int number_of_seeds, unsigned long int *seeds) {
   SeedQueue *sqp = malloc(sizeof(SeedQueue));
@@ -48,6 +50,10 @@ Dispatcher *new_dispatcher(char *reaction_network_dir,
   dp->reaction_network_dir = reaction_network_dir;
   dp->logging = logging;
   dp->rn = new_reaction_network(reaction_network_dir, logging);
+  if (!dp->rn) {
+    puts("reaction network wasn't created");
+    return NULL;
+  }
 
   dp->simulation_params = simulation_params;
 
@@ -57,12 +63,12 @@ Dispatcher *new_dispatcher(char *reaction_network_dir,
   stpcpy(end, number_of_seeds_postfix);
   file = fopen(path,"r");
   if (!file) {
-    printf("new_dispatcher: cannot open %s",path);
+    printf("new_dispatcher: cannot open %s\n",path);
     return NULL;
+  } else {
+    return_code = fscanf(file, "%d\n", &number_of_seeds);
+    fclose(file);
   }
-  return_code = fscanf(file, "%d\n", &number_of_seeds);
-  fclose(file);
-
 
   // read seeds
   unsigned long int *seeds = malloc(sizeof(unsigned long int) * number_of_seeds);
@@ -70,13 +76,14 @@ Dispatcher *new_dispatcher(char *reaction_network_dir,
   stpcpy(end, seeds_postfix);
   file = fopen(path,"r");
   if (!file) {
-    printf("new_dispatcher: cannot open %s",path);
+    printf("new_dispatcher: cannot open %s\n",path);
     return NULL;
+  } else {
+    for (i = 0; i < number_of_seeds; i++) {
+      return_code = fscanf(file, "%lu\n", seeds + i);
+    }
+    fclose(file);
   }
-  for (i = 0; i < number_of_seeds; i++) {
-    return_code = fscanf(file, "%lu\n", seeds + i);
-  }
-  fclose(file);
 
   dp->sq = new_seed_queue(number_of_seeds, seeds);
 
@@ -85,22 +92,46 @@ Dispatcher *new_dispatcher(char *reaction_network_dir,
   stpcpy(end, number_of_threads_postfix);
   file = fopen(path,"r");
   if (!file) {
-    printf("new_dispatcher: cannot open %s",path);
+    printf("new_dispatcher: cannot open %s\n", path);
     return NULL;
+  } else {
+    return_code = fscanf(file, "%d\n", &dp->number_of_threads);
+    fclose(file);
   }
-  return_code = fscanf(file, "%d\n", &dp->number_of_threads);
-  fclose(file);
 
-  // read time_cutoff
+  // read step_cutoff
   end = stpcpy(path, simulation_params);
-  stpcpy(end, time_cutoff_postfix);
+  stpcpy(end, step_cutoff_postfix);
   file = fopen(path,"r");
   if (!file) {
-    printf("new_dispatcher: cannot open %s",path);
-    return NULL;
+
+    printf("new_dispatcher: cannot open %s. Defaulting to time cutoff.\n",path);
+    // read time_cutoff
+    end = stpcpy(path, simulation_params);
+    stpcpy(end, time_cutoff_postfix);
+    file = fopen(path,"r");
+    if (!file) {
+      printf("new_dispatcher: cannot open %s\n",path);
+      return NULL;
+    } else {
+      return_code = fscanf(file, "%lf\n", &dp->time_cutoff);
+      dp->step_cutoff = -1;
+      if (logging)
+        puts("using time cutoff");
+      dp->cutoff_type = time_cutoff;
+      fclose(file);
+    }
   }
-  return_code = fscanf(file, "%lf\n", &dp->time_cutoff);
-  fclose(file);
+
+  else {
+    return_code = fscanf(file, "%d\n", &dp->step_cutoff);
+    if (logging)
+      puts("using step cutoff");
+    dp->cutoff_type = step_cutoff;
+    dp->time_cutoff = 0;
+    fclose(file);
+  }
+
 
 
   dp->threads = malloc(sizeof(pthread_t) * dp->number_of_threads);
@@ -121,7 +152,12 @@ void run_dispatcher(Dispatcher *dp) {
     printf("spawning %d threads\n",dp->number_of_threads);
 
   for (i = 0; i < dp->number_of_threads; i++) {
-    sp = new_simulator_payload(dp->rn, tree, dp->sq, dp->time_cutoff);
+    sp = new_simulator_payload(dp->rn,
+                               tree,
+                               dp->sq,
+                               dp->cutoff_type,
+                               dp->time_cutoff,
+                               dp->step_cutoff);
     pthread_create(dp->threads + i, NULL, run_simulator, (void *)sp);
   }
 
@@ -138,14 +174,18 @@ void run_dispatcher(Dispatcher *dp) {
 SimulatorPayload *new_simulator_payload(ReactionNetwork *rn,
                                         SolveType type,
                                         SeedQueue *sq,
-                                        double time_cutoff
+                                        CutoffType cutoff_type,
+                                        double time_cutoff,
+                                        int step_cutoff
                                         ) {
 
   SimulatorPayload *spp = malloc(sizeof(SimulatorPayload));
   spp->rn = rn;
   spp->type = type;
   spp->sq = sq;
+  spp->cutoff_type = cutoff_type;
   spp->time_cutoff = time_cutoff;
+  spp->step_cutoff = step_cutoff;
   return spp;
 }
 
@@ -160,7 +200,14 @@ void *run_simulator(void *simulator_payload) {
   while (seed > 0) {
     Simulation *simulation = new_simulation(sp->rn, seed, sp->type);
 
-    run_until(simulation, sp->time_cutoff);
+    switch (sp->cutoff_type) {
+      case time_cutoff:
+        run_until(simulation, sp->time_cutoff);
+        break;
+      case step_cutoff:
+        run_for(simulation, sp->step_cutoff);
+        break;
+    }
     simulation_history_to_file(simulation);
 
     // this is nice for small batches, but unwieldy for large batches
