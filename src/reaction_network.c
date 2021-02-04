@@ -45,7 +45,7 @@ ReactionNetwork *new_reaction_network(char *directory, bool logging) {
   stpcpy(end, number_of_species_postfix);
   file = fopen(path, "r");
   if (!file) {
-    printf("new_reaction_network: cannot open %s",path);
+    printf("new_reaction_network: cannot open %s\n",path);
     return NULL;
   } else {
     return_code = fscanf(file, "%d\n", &rnp->number_of_species);
@@ -57,7 +57,7 @@ ReactionNetwork *new_reaction_network(char *directory, bool logging) {
   stpcpy(end, number_of_reactions_postfix);
   file = fopen(path, "r");
   if (!file) {
-    printf("new_reaction_network: cannot open %s",path);
+    printf("new_reaction_network: cannot open %s\n",path);
     return NULL;
   } else {
     return_code = fscanf(file, "%d\n", &rnp->number_of_reactions);
@@ -70,7 +70,7 @@ ReactionNetwork *new_reaction_network(char *directory, bool logging) {
   stpcpy(end, number_of_reactants_postfix);
   file = fopen(path, "r");
   if (!file) {
-    printf("new_reaction_network: cannot open %s",path);
+    printf("new_reaction_network: cannot open %s\n",path);
     return NULL;
   } else {
     for (i = 0; i < rnp->number_of_reactions; i++) {
@@ -94,7 +94,7 @@ ReactionNetwork *new_reaction_network(char *directory, bool logging) {
   stpcpy(end, reactants_postfix);
   file = fopen(path, "r");
   if (!file) {
-    printf("new_reaction_network: cannot open %s",path);
+    printf("new_reaction_network: cannot open %s\n",path);
     return NULL;
   } else {
     for (i = 0; i < rnp->number_of_reactions; i++) {
@@ -113,7 +113,7 @@ ReactionNetwork *new_reaction_network(char *directory, bool logging) {
   stpcpy(end, number_of_products_postfix);
   file = fopen(path, "r");
   if (!file) {
-    printf("new_reaction_network: cannot open %s",path);
+    printf("new_reaction_network: cannot open %s\n",path);
     return NULL;
   } else {
     for (i = 0; i < rnp->number_of_reactions; i++) {
@@ -137,7 +137,7 @@ ReactionNetwork *new_reaction_network(char *directory, bool logging) {
   stpcpy(end, products_postfix);
   file = fopen(path, "r");
   if (!file) {
-    printf("new_reaction_network: cannot open %s",path);
+    printf("new_reaction_network: cannot open %s\n",path);
     return NULL;
   } else {
     for (i = 0; i < rnp->number_of_reactions; i++) {
@@ -154,7 +154,7 @@ ReactionNetwork *new_reaction_network(char *directory, bool logging) {
   stpcpy(end, factor_zero_postfix);
   file = fopen(path, "r");
   if (!file) {
-    printf("new_reaction_network: cannot open %s",path);
+    printf("new_reaction_network: cannot open %s\n",path);
     return NULL;
   } else {
     return_code = fscanf(file, "%lf\n", &rnp->factor_zero);
@@ -166,7 +166,7 @@ ReactionNetwork *new_reaction_network(char *directory, bool logging) {
   stpcpy(end, factor_two_postfix);
   file = fopen(path, "r");
   if (!file) {
-    printf("new_reaction_network: cannot open %s",path);
+    printf("new_reaction_network: cannot open %s\n",path);
     return NULL;
   } else {
     return_code = fscanf(file, "%lf\n", &rnp->factor_two);
@@ -178,7 +178,7 @@ ReactionNetwork *new_reaction_network(char *directory, bool logging) {
   stpcpy(end, factor_duplicate_postfix);
   file = fopen(path, "r");
   if (!file) {
-    printf("new_reaction_network: cannot open %s",path);
+    printf("new_reaction_network: cannot open %s\n",path);
     return NULL;
   } else {
     return_code = fscanf(file, "%lf\n", &rnp->factor_duplicate);
@@ -191,7 +191,7 @@ ReactionNetwork *new_reaction_network(char *directory, bool logging) {
   stpcpy(end, rates_postfix);
   file = fopen(path, "r");
   if (!file) {
-    printf("new_reaction_network: cannot open %s",path);
+    printf("new_reaction_network: cannot open %s\n",path);
     return NULL;
   } else {
     for (i = 0; i < rnp->number_of_reactions; i++) {
@@ -207,7 +207,7 @@ ReactionNetwork *new_reaction_network(char *directory, bool logging) {
   stpcpy(end, initial_state_postfix);
   file = fopen(path, "r");
   if (!file) {
-    printf("new_reaction_network: cannot open %s",path);
+    printf("new_reaction_network: cannot open %s\n",path);
     return NULL;
   } else {
 
