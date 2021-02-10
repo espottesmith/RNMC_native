@@ -3,9 +3,10 @@
 Chunk *new_chunk() {
   Chunk *chunkp = malloc(sizeof(Chunk));
   int i;
-  for (i = 0; i < CHUNK_SIZE; i++)
-    chunkp->data[i] = -1;
-
+  for (i = 0; i < CHUNK_SIZE; i++) {
+    chunkp->data[i].reaction = -1;
+    chunkp->data[i].time = 0.0;
+  }
   chunkp->next_free_index = 0;
   chunkp->next_chunk = NULL;
   return chunkp;
@@ -33,17 +34,19 @@ void free_simulation_history(SimulationHistory *simulation_historyp) {
   free(simulation_historyp);
 }
 
-void insert_reaction(SimulationHistory *simulation_historyp, int reaction) {
+void insert_history_element(SimulationHistory *simulation_historyp, int reaction, double time) {
 
   Chunk *last_chunkp = simulation_historyp->last_chunk;
   if (last_chunkp->next_free_index == CHUNK_SIZE) {
     Chunk *new_chunkp = new_chunk();
     last_chunkp->next_chunk = new_chunkp;
     simulation_historyp->last_chunk = new_chunkp;
-    new_chunkp->data[0] = reaction;
+    new_chunkp->data[0].reaction = reaction;
+    new_chunkp->data[0].time = time;
     new_chunkp->next_free_index++;
   } else {
-    last_chunkp->data[last_chunkp->next_free_index] = reaction;
+    last_chunkp->data[last_chunkp->next_free_index].reaction = reaction;
+    last_chunkp->data[last_chunkp->next_free_index].time = time;
     last_chunkp->next_free_index++;
   }
 }
@@ -76,9 +79,9 @@ Simulation *new_simulation(ReactionNetwork *rnp,
   sp->time = 0.0;
   sp->step = 0;
   sp->solver = new_solve(type,
-                                  seed,
-                                  rnp->number_of_reactions,
-                                  rnp->initial_propensities);
+                         seed,
+                         rnp->number_of_reactions,
+                         rnp->initial_propensities);
 
   sp->history = new_simulation_history();
   sp->propensity_buffer = malloc(sizeof(double) * rnp->number_of_reactions);
@@ -109,7 +112,7 @@ bool step(Simulation *sp) {
     sp->time += dt;
 
     // record reaction
-    insert_reaction(sp->history,next_reaction);
+    insert_history_element(sp->history, next_reaction, sp->time);
 
     // update state
     for (m = 0; m < sp->rn->number_of_reactants[next_reaction]; m++)
@@ -121,7 +124,6 @@ bool step(Simulation *sp) {
     DependentsNode *dnp = get_dependency_node(sp->rn, next_reaction);
     int number_of_updates = dnp->number_of_dependents;
     int *dependents = dnp->dependents;
-
 
     for (m = 0; m < number_of_updates; m++) {
       reaction_index = dependents[m];
@@ -170,15 +172,25 @@ void simulation_history_to_file(Simulation *sp) {
   } else {
     mkdir(path,0777);
   }
-  sprintf(end, "/%ld", sp->seed);
-  FILE *file = fopen(path,"w");
+
+  char reaction_path[2048];
+  char time_path[2048];
+  char* reaction_end = stpcpy(reaction_path, path);
+  char* time_end = stpcpy(time_path, path);
+
+  sprintf(reaction_end, "/reactions_%ld", sp->seed);
+  sprintf(time_end, "/times_%ld", sp->seed);
+  FILE *reaction_file = fopen(reaction_path,"w");
+  FILE *time_file = fopen(time_path,"w");
   int i;
   Chunk *chunk = sp->history->first_chunk;
   while (chunk) {
-    for (i = 0; i < chunk->next_free_index; i++)
-      fprintf(file, "%d\n", chunk->data[i]);
+    for (i = 0; i < chunk->next_free_index; i++) {
+      fprintf(reaction_file, "%d\n", chunk->data[i].reaction);
+      fprintf(time_file, "%1.14e\n", chunk->data[i].time);
+    }
     chunk = chunk->next_chunk;
   }
-  fclose(file);
+  fclose(reaction_file);
+  fclose(time_file);
 }
-

@@ -54,11 +54,11 @@ void test_serialization() {
 
   if (reaction_networks_differ(rnp, rnp_copy)) {
     puts(ANSI_COLOR_RED
-         "failed: ReactionNetwork to file to ReactionBetwork test"
+         "failed: ReactionNetwork to file to ReactionNetwork test"
          ANSI_COLOR_RESET);
   } else {
     puts(ANSI_COLOR_GREEN
-         "passed: ReactionNetwork to file to ReactionBetwork test"
+         "passed: ReactionNetwork to file to ReactionNetwork test"
          ANSI_COLOR_RESET);
 
   }
@@ -74,17 +74,29 @@ void run_test_simulation() {
   Simulation *sp = new_simulation(rnp, 42, tree);
   run_until(sp, 5);
   simulation_history_to_file(sp);
-  char *cmd = "diff ./test_simulation_histories/42 ./ronalds_network/simulation_histories/42 > /dev/null";
-  int status = system(cmd);
+  char *reaction_cmd = "diff ./test_simulation_histories/reactions_42 ./ronalds_network/simulation_histories/reactions_42 > /dev/null";
+  int reaction_status = system(reaction_cmd);
   // status code 0 means no differences
   // non zero status code means difference found
-  if (status)
+  if (reaction_status)
     puts(ANSI_COLOR_RED
-         "failed: seed 42 simulation has changed"
+         "failed: seed 42 simulation reactions have changed"
          ANSI_COLOR_RESET);
   else
     puts(ANSI_COLOR_GREEN
-         "passed: seed 42 simulation normal"
+         "passed: seed 42 simulation reactions normal"
+         ANSI_COLOR_RESET);
+
+  char *time_cmd = "diff ./test_simulation_histories/times_42 ./ronalds_network/simulation_histories/times_42 > /dev/null";
+  int time_status = system(time_cmd);
+
+  if (time_status)
+    puts(ANSI_COLOR_RED
+         "failed: seed 42 simulation times have changed"
+         ANSI_COLOR_RESET);
+  else
+    puts(ANSI_COLOR_GREEN
+         "passed: seed 42 simulation times normal"
          ANSI_COLOR_RESET);
 
   if (sp->step == simulation_history_length(sp->history))
@@ -127,16 +139,15 @@ void run_test_dispatcher() {
          "passed: dispatcher behaving correctly"
          ANSI_COLOR_RESET);
 
-
-
-
 }
 
 void test_long_simulation_history() {
   double inital_propensities[] = {.1, .1, .8, .1, .4, .1, .0};
   int length = 42069;
   int values[42069];
+  double times[42069];
   double dt;
+  double time = 0.0;
   int sample;
   int i, j;
   Solve *q = new_solve(tree, 42, 7, inital_propensities);
@@ -145,7 +156,9 @@ void test_long_simulation_history() {
   for (i = 0; i < length; i++) {
     sample = q->event(q, &dt);
     values[i] = sample;
-    insert_reaction(sh, sample);
+    time += dt;
+    times[i] = time;
+    insert_history_element(sh, sample, time);
   }
 
   i = 0;
@@ -153,8 +166,9 @@ void test_long_simulation_history() {
   Chunk *chunk = sh->first_chunk;
   while (chunk) {
     for (j = 0; j < chunk->next_free_index; j++) {
-      if (chunk->data[j] != values[i])
+      if (chunk->data[j].reaction != values[i] || chunk->data[j].time != times[i]) {
         flag = false;
+      }
       i++;
     }
     chunk = chunk->next_chunk;
@@ -168,7 +182,6 @@ void test_long_simulation_history() {
         puts(ANSI_COLOR_RED
          "failed: history readback incorrect"
          ANSI_COLOR_RESET);
-
 
   free_solve(q);
   free_simulation_history(sh);

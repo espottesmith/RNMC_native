@@ -1,3 +1,9 @@
-RNMC
+bin
 test
 __pycache__
+.idea
+.eggs
+RNMC.dSYM
+test.dSYM
+rnmc.egg-info
+test_materials/ronalds_network/simulation_histories
