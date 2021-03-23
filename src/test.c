@@ -179,7 +179,7 @@ bool test_long_simulation_history() {
 }
 
 bool run_tests(char *test_materials_dir) {
-  chdir(test_materials_dir);
+  int return_code = chdir(test_materials_dir);
   bool result = test_samplers() &&
     test_serialization() &&
     run_test_simulation() &&
@@ -191,7 +191,7 @@ bool run_tests(char *test_materials_dir) {
 
 
 int main(int argc, char **argv) {
-  bool flag;
+  bool flag = false;
   if (argc != 2)
     puts("usage: ./test test_materials_directory");
   else

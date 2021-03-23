@@ -2,7 +2,12 @@ project(
   'RNMC',
   'c',
   version: '1.0',
-  license: 'BSD3-Clause-LBNL')
+  license: 'BSD3-Clause-LBNL',
+)
+
+add_project_arguments('-Wno-unused-but-set-variable', language: 'c')
+add_project_arguments('-Wno-unused-variable', language: 'c')
+
 
 cc = meson.get_compiler('c')
 gsl = cc.find_library('gsl')

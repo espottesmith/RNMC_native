@@ -13,6 +13,8 @@ Solve *new_solve(SolveType type,
   case tree:
     return (Solve *) new_solve_tree(seed, number_of_reactions, initial_propensities);
   }
+
+  return NULL;
 }
 
 void free_solve(Solve *p) {
