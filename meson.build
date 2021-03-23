@@ -34,10 +34,12 @@ executable(
   install: true
 )
 
-executable(
+tests = executable(
   'RNMC_test',
   files(['src/test.c'] + common_files),
   dependencies: [gsl, gslcblas, math_dep, pthread],
   include_directories: [RNMC_include],
-  install: true
+  install: false
 )
+
+test('tests', tests, args: ['../test_materials'])
