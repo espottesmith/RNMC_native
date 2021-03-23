@@ -8,8 +8,13 @@ RNMC depends on [GSL](https://www.gnu.org/software/gsl/) for pseudo random numbe
 
 ### Building
 
-- To build the tests, run `./build test`. The tests are run as `./test ./test_materials`.
-- To build RNMC, run `./build RNMC`. RNMC is run as `./RNMC reaction_network_dir simulation_params`. After running, the simulation histories will be stored in `./reaction_network_dir/simulation_histories`.
+RNMC_native is built using meson and ninja:
+```
+meson setup builddir
+cd builddir
+ninja
+meson test
+```
 
 ### reaction_network_dir
 
