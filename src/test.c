@@ -191,10 +191,14 @@ bool run_tests(char *test_materials_dir) {
 
 
 int main(int argc, char **argv) {
+  bool flag;
   if (argc != 2)
     puts("usage: ./test test_materials_directory");
   else
-    run_tests(argv[1]);
+    flag = run_tests(argv[1]);
 
-  pthread_exit(NULL);
+  if (flag)
+    return 0;
+  else
+    return 1;
 }
