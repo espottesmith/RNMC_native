@@ -7,6 +7,8 @@ mkShell rec {
                   lldb
                   gdb
                   valgrind
+                  meson
+                  ninja
                 ];
 
   CPATH = lib.makeSearchPathOutput "dev" "include" [ clang.libc gsl ];
