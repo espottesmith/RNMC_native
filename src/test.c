@@ -1,6 +1,7 @@
 #include "test.h"
 
-void test_samplers() {
+bool test_samplers() {
+  bool flag = true;
   double inital_propensities[] = {.1, .1, .8, .1, .4, .1, .0};
   Solve *p = new_solve(linear, 42, 7, inital_propensities);
   Solve *q = new_solve(tree, 42, 7, inital_propensities);
@@ -20,18 +21,19 @@ void test_samplers() {
   free_solve(q);
 
   if (result)
-    puts(ANSI_COLOR_GREEN
-         "passed: sampler test"
-         ANSI_COLOR_RESET);
-  else
-    puts(ANSI_COLOR_RED
-         "failed: sampler test"
-         ANSI_COLOR_RESET);
+    puts(ANSI_COLOR_GREEN "passed: sampler test" ANSI_COLOR_RESET);
+  else {
+    puts(ANSI_COLOR_RED "failed: sampler test" ANSI_COLOR_RESET);
+    flag = false;
+  }
+
+  return flag;
 }
 
 
 // currently segfaults if not run from the correct directory
-void test_serialization() {
+bool test_serialization() {
+  bool flag = true;
   char *ronalds_network_dir = "./ronalds_network";
   char *test_network_dir = "./test_network";
 
@@ -41,34 +43,30 @@ void test_serialization() {
   int status = system(cmd);
   // status code 0 means no differences
   // non zero status code means difference found
-  if (status)
-    puts(ANSI_COLOR_RED
-         "failed: file to ReactionNetwork to file test"
-         ANSI_COLOR_RESET);
-  else
-    puts(ANSI_COLOR_GREEN
-         "passed: file to ReactionNetwork to file test"
-         ANSI_COLOR_RESET);
+  if (status) {
+    puts(ANSI_COLOR_RED "failed: file to ReactionNetwork to file test" ANSI_COLOR_RESET);
+    flag = false;
+  } else
+    puts(ANSI_COLOR_GREEN "passed: file to ReactionNetwork to file test" ANSI_COLOR_RESET);
 
   ReactionNetwork *rnp_copy = new_reaction_network(test_network_dir, false);
 
   if (reaction_networks_differ(rnp, rnp_copy)) {
-    puts(ANSI_COLOR_RED
-         "failed: ReactionNetwork to file to ReactionNetwork test"
-         ANSI_COLOR_RESET);
+    puts(ANSI_COLOR_RED "failed: ReactionNetwork to file to ReactionNetwork test" ANSI_COLOR_RESET);
+    flag = false;
   } else {
-    puts(ANSI_COLOR_GREEN
-         "passed: ReactionNetwork to file to ReactionNetwork test"
-         ANSI_COLOR_RESET);
-
+    puts(ANSI_COLOR_GREEN "passed: ReactionNetwork to file to ReactionNetwork test" ANSI_COLOR_RESET);
   }
 
   free_reaction_network(rnp);
   free_reaction_network(rnp_copy);
   status = system("rm -r ./test_network");
+  return flag;
 }
 
-void run_test_simulation() {
+
+bool run_test_simulation() {
+  bool flag = true;
   char *ronalds_network_dir = "./ronalds_network";
   ReactionNetwork *rnp = new_reaction_network(ronalds_network_dir, false);
   Simulation *sp = new_simulation(rnp, 42, tree);
@@ -78,43 +76,36 @@ void run_test_simulation() {
   int reaction_status = system(reaction_cmd);
   // status code 0 means no differences
   // non zero status code means difference found
-  if (reaction_status)
-    puts(ANSI_COLOR_RED
-         "failed: seed 42 simulation reactions have changed"
-         ANSI_COLOR_RESET);
-  else
-    puts(ANSI_COLOR_GREEN
-         "passed: seed 42 simulation reactions normal"
-         ANSI_COLOR_RESET);
+  if (reaction_status) {
+    puts(ANSI_COLOR_RED "failed: seed 42 simulation reactions have changed" ANSI_COLOR_RESET);
+    flag = false;
+  } else
+    puts(ANSI_COLOR_GREEN "passed: seed 42 simulation reactions normal" ANSI_COLOR_RESET);
 
   char *time_cmd = "diff ./test_simulation_histories/times_42 ./ronalds_network/simulation_histories/times_42 > /dev/null";
   int time_status = system(time_cmd);
 
-  if (time_status)
-    puts(ANSI_COLOR_RED
-         "failed: seed 42 simulation times have changed"
-         ANSI_COLOR_RESET);
-  else
-    puts(ANSI_COLOR_GREEN
-         "passed: seed 42 simulation times normal"
-         ANSI_COLOR_RESET);
+  if (time_status) {
+    puts(ANSI_COLOR_RED "failed: seed 42 simulation times have changed" ANSI_COLOR_RESET);
+    flag = false;
+  } else
+    puts(ANSI_COLOR_GREEN "passed: seed 42 simulation times normal" ANSI_COLOR_RESET);
 
   if (sp->step == simulation_history_length(sp->history))
-        puts(ANSI_COLOR_GREEN
-         "passed: history length agrees with number of steps"
-         ANSI_COLOR_RESET);
-  else
-        puts(ANSI_COLOR_RED
-         "failed: history length is different to number of steps"
-         ANSI_COLOR_RESET);
-
+        puts(ANSI_COLOR_GREEN "passed: history length agrees with number of steps" ANSI_COLOR_RESET);
+  else {
+    puts(ANSI_COLOR_RED "failed: history length is different to number of steps" ANSI_COLOR_RESET);
+    flag = false;
+  }
 
   free_simulation(sp);
   free_reaction_network(rnp);
+  return flag;
 
 }
 
-void run_test_dispatcher() {
+bool run_test_dispatcher() {
+  bool flag = true;
   Dispatcher *dp = new_dispatcher("./ronalds_network","./simulation_params", false);
     if (!dp) {
       puts(ANSI_COLOR_RED
@@ -130,18 +121,18 @@ void run_test_dispatcher() {
   int status = system(cmd);
   // status code 0 means no differences
   // non zero status code means difference found
-  if (status)
-    puts(ANSI_COLOR_RED
-         "failed: dispatcher produced different result"
-         ANSI_COLOR_RESET);
-  else
-    puts(ANSI_COLOR_GREEN
-         "passed: dispatcher behaving correctly"
-         ANSI_COLOR_RESET);
+  if (status) {
+    puts(ANSI_COLOR_RED "failed: dispatcher produced different result" ANSI_COLOR_RESET);
+    flag = false;
+  } else
+    puts(ANSI_COLOR_GREEN "passed: dispatcher behaving correctly" ANSI_COLOR_RESET);
+
+  return flag;
 
 }
 
-void test_long_simulation_history() {
+bool test_long_simulation_history() {
+  bool flag = true;
   double inital_propensities[] = {.1, .1, .8, .1, .4, .1, .0};
   int length = 42069;
   int values[42069];
@@ -162,38 +153,40 @@ void test_long_simulation_history() {
   }
 
   i = 0;
-  bool flag = true;
+  bool result = true;
   Chunk *chunk = sh->first_chunk;
   while (chunk) {
     for (j = 0; j < chunk->next_free_index; j++) {
       if (chunk->data[j].reaction != values[i] || chunk->data[j].time != times[i]) {
-        flag = false;
+        result = false;
       }
       i++;
     }
     chunk = chunk->next_chunk;
   }
 
-  if (flag)
-    puts(ANSI_COLOR_GREEN
-         "passed: history readback correct"
-         ANSI_COLOR_RESET);
-  else
-        puts(ANSI_COLOR_RED
-         "failed: history readback incorrect"
-         ANSI_COLOR_RESET);
+  if (result)
+    puts(ANSI_COLOR_GREEN "passed: history readback correct" ANSI_COLOR_RESET);
+  else {
+    puts(ANSI_COLOR_RED "failed: history readback incorrect" ANSI_COLOR_RESET);
+    flag = false;
+  }
 
   free_solve(q);
   free_simulation_history(sh);
+
+  return flag;
 }
 
-void run_tests(char *test_materials_dir) {
-  int status = chdir(test_materials_dir);
-  test_samplers();
-  test_serialization();
-  run_test_simulation();
-  test_long_simulation_history();
-  run_test_dispatcher();
+bool run_tests(char *test_materials_dir) {
+  chdir(test_materials_dir);
+  bool result = test_samplers() &&
+    test_serialization() &&
+    run_test_simulation() &&
+    test_long_simulation_history() &&
+    run_test_dispatcher();
+
+  return result;
 }
 
 

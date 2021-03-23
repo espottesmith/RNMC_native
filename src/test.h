@@ -13,9 +13,9 @@
 #define ANSI_COLOR_RESET   "\x1b[0m"
 
 
-void test_samplers();
-void test_serialization();
-void run_tests();
-void run_simulation();
-void run_test_dispatcher();
-void test_long_simulation_history();
+bool test_samplers();
+bool test_serialization();
+bool run_simulation();
+bool run_test_dispatcher();
+bool test_long_simulation_history();
+bool run_tests();
