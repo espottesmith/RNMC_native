@@ -111,7 +111,7 @@ bool run_test_dispatcher() {
       puts(ANSI_COLOR_RED
            "failed: dispatcher wasn't created"
            ANSI_COLOR_RESET);
-      pthread_exit(NULL);
+      exit(1);
     }
 
   run_dispatcher(dp);

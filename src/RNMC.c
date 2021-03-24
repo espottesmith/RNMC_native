@@ -12,13 +12,12 @@ int main(int argc, char **argv) {
                                     true);
     if (!dp) {
       puts("dispatcher wasn't created");
-      pthread_exit(NULL);
+      exit(1);
     }
     run_dispatcher(dp);
     free_dispatcher(dp);
 
-
-    pthread_exit(NULL);
+    exit(0);
   }
 
 }
