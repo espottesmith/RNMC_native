@@ -1,8 +1,10 @@
 #include "dispatcher.h"
 
 int main(int argc, char **argv) {
-  if (argc != 3)
+  if (argc != 3) {
     puts("usage: ./RNMC reaction_network_dir simulation_params");
+    exit(0);
+  }
 
   else {
     Dispatcher *dp = new_dispatcher(argv[1],
@@ -14,7 +16,9 @@ int main(int argc, char **argv) {
     }
     run_dispatcher(dp);
     free_dispatcher(dp);
+
+
+    pthread_exit(NULL);
   }
 
-  pthread_exit(NULL);
 }
