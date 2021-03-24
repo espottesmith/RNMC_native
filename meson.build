@@ -12,7 +12,7 @@ add_project_arguments('-Wno-unused-variable', language: 'c')
 cc = meson.get_compiler('c')
 gsl = cc.find_library('gsl')
 gslcblas = cc.find_library('gslcblas')
-pthread = cc.find_library('pthread')
+thread_dep = dependency('threads')
 # linux has a standalone math header so we need to have it as an explicit dependency
 math_dep = cc.find_library('m', required : false)
 
@@ -29,7 +29,7 @@ RNMC_include = include_directories('src')
 executable(
   'RNMC',
   files(['src/RNMC.c'] + common_files),
-  dependencies: [gsl, gslcblas, math_dep, pthread],
+  dependencies: [gsl, gslcblas, math_dep, thread_dep],
   include_directories: [RNMC_include],
   install: true
 )
@@ -37,7 +37,7 @@ executable(
 tests = executable(
   'RNMC_test',
   files(['src/test.c'] + common_files),
-  dependencies: [gsl, gslcblas, math_dep, pthread],
+  dependencies: [gsl, gslcblas, math_dep, thread_dep],
   include_directories: [RNMC_include],
   install: false
 )
