@@ -9,6 +9,7 @@
 #include <sys/types.h>
 #include <stdbool.h>
 #include <pthread.h>
+#include <time.h>
 
 typedef struct dependentsNode {
   int number_of_dependents; // number of reactions that depend on current reaction.
@@ -16,6 +17,7 @@ typedef struct dependentsNode {
   int *dependents; // reactions which depend on current reaction.
   // dependents is set to NULL if reaction hasn't been encountered before
   pthread_mutex_t mutex; // mutex needed because simulation thread initialize dependents
+  time_t first_observed; // time in seconds since start of program when reaction first observed
 } DependentsNode;
 
 // struct for storing the static reaction network state which
@@ -52,6 +54,7 @@ typedef struct reactionNetwork {
 
   // dependency graph. List of DependencyNodes number_of_reactions long.
   DependentsNode *dependency_graph;
+  time_t start_time; // start time of simulation
   bool logging;
 } ReactionNetwork;
 

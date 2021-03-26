@@ -16,6 +16,7 @@ void initialize_dependents_node(DependentsNode *dnp) {
   dnp->number_of_dependents = -1;
   dnp->dependents = NULL;
   pthread_mutex_init(&dnp->mutex, NULL);
+  dnp->first_observed = -1;
 }
 
 void free_dependents_node(DependentsNode *dnp) {
@@ -217,6 +218,8 @@ ReactionNetwork *new_reaction_network(char *directory, bool logging) {
     fclose(file);
   }
 
+  rnp->start_time = time(NULL);
+
   initialize_dependency_graph(rnp);
   initialize_propensities(rnp);
 
@@ -307,10 +310,11 @@ void compute_dependency_node(ReactionNetwork *rnp, int index) {
     }
     current_reaction++;
   }
+  node->first_observed = time(NULL) - rnp->start_time;
+
   if (rnp->logging)
-    printf("computed dependents of reaction %d\n",index);
-
-
+    printf("dependency node: %ld %d\n",
+           node->first_observed, index);
 }
 
 void initialize_dependency_graph(ReactionNetwork *rnp) {
