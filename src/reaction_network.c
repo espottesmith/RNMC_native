@@ -313,7 +313,7 @@ void compute_dependency_node(ReactionNetwork *rnp, int index) {
   node->first_observed = time(NULL) - rnp->start_time;
 
   if (rnp->logging)
-    printf("dependency node: %ld %d\n",
+    printf("dependency node: time = %ld , reaction = %d\n",
            node->first_observed, index);
 }
 
