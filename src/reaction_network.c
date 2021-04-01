@@ -26,7 +26,7 @@ void free_dependents_node(DependentsNode *dnp) {
   pthread_mutex_destroy(&dnp->mutex);
 }
 
-ReactionNetwork *new_reaction_network(char *directory, bool logging) {
+ReactionNetwork *new_reaction_network_from_files(char *directory, bool logging) {
   // currently segfaults if files don't exist.
   ReactionNetwork *rnp = malloc(sizeof(ReactionNetwork));
   char *end;
@@ -390,7 +390,7 @@ void initialize_propensities(ReactionNetwork *rnp) {
 
 
 
-int reaction_network_to_file(ReactionNetwork *rnp, char *directory) {
+int reaction_network_to_files(ReactionNetwork *rnp, char *directory) {
   char *end;
   char path[2048];
   FILE* file;

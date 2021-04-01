@@ -37,8 +37,8 @@ bool test_serialization() {
   char *ronalds_network_dir = "./ronalds_network";
   char *test_network_dir = "./test_network";
 
-  ReactionNetwork *rnp = new_reaction_network(ronalds_network_dir, false);
-  reaction_network_to_file(rnp, test_network_dir);
+  ReactionNetwork *rnp = new_reaction_network_from_files(ronalds_network_dir, false);
+  reaction_network_to_files(rnp, test_network_dir);
   char *cmd = "diff -r --exclude=simulation_histories ./ronalds_network ./test_network > /dev/null";
   int status = system(cmd);
   // status code 0 means no differences
@@ -49,7 +49,7 @@ bool test_serialization() {
   } else
     puts(ANSI_COLOR_GREEN "passed: file to ReactionNetwork to file test" ANSI_COLOR_RESET);
 
-  ReactionNetwork *rnp_copy = new_reaction_network(test_network_dir, false);
+  ReactionNetwork *rnp_copy = new_reaction_network_from_files(test_network_dir, false);
 
   if (reaction_networks_differ(rnp, rnp_copy)) {
     puts(ANSI_COLOR_RED "failed: ReactionNetwork to file to ReactionNetwork test" ANSI_COLOR_RESET);
@@ -68,7 +68,7 @@ bool test_serialization() {
 bool run_test_simulation() {
   bool flag = true;
   char *ronalds_network_dir = "./ronalds_network";
-  ReactionNetwork *rnp = new_reaction_network(ronalds_network_dir, false);
+  ReactionNetwork *rnp = new_reaction_network_from_files(ronalds_network_dir, false);
   Simulation *sp = new_simulation(rnp, 42, tree);
   run_until(sp, 5);
   simulation_history_to_file(sp);

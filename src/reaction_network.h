@@ -58,7 +58,7 @@ typedef struct reactionNetwork {
   bool logging;
 } ReactionNetwork;
 
-ReactionNetwork *new_reaction_network(char *directory, bool logging);
+ReactionNetwork *new_reaction_network_from_files(char *directory, bool logging);
 void free_reaction_network(ReactionNetwork *rnp);
 
 DependentsNode *get_dependency_node(ReactionNetwork *rnp, int index);
@@ -72,7 +72,11 @@ void initialize_propensities(ReactionNetwork *rnp);
 // serialize a reaction network to the disk (not including initial propensities
 // and dependency graph). Each attribute is stored in directory/attribute_name
 // directory is an argument so we can serialize into another location
-int reaction_network_to_file(ReactionNetwork *rnp, char *directory);
+int reaction_network_to_files(ReactionNetwork *rnp, char *directory);
+
+
+
+
 bool reaction_networks_differ(ReactionNetwork *rnpa, ReactionNetwork *rnpb);
 
 #endif

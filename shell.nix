@@ -9,7 +9,8 @@ mkShell rec {
                   valgrind
                   meson
                   ninja
+                  sqlite
                 ];
 
-  CPATH = lib.makeSearchPathOutput "dev" "include" [ clang.libc gsl ];
+  CPATH = lib.makeSearchPathOutput "dev" "include" [ clang.libc gsl sqlite ];
 }
