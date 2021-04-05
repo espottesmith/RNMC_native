@@ -24,7 +24,17 @@ char *create_tables =
 
   "CREATE UNIQUE INDEX reaction_string_idx ON reactions (reaction_string)";
 
+
+char *insert_metadata_header =
+  "INSERT INTO metadata ("
+  "        number_of_species,"
+  "        number_of_reactions,"
+  "        factor_duplicate,"
+  "        factor_two,"
+  "        factor_zero)";
+
 char *insert_metadata(ReactionNetwork *rnp) {
   char *sql_statement = malloc(sizeof(char) * SQL_STATEMENT_LENGTH);
+  char *end;
   return sql_statement;
 }

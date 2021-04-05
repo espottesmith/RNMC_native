@@ -6,6 +6,8 @@
 #define SQL_STATEMENT_LENGTH 2048
 
 char *create_tables;
+char *insert_metadata_header;
+
 
 char *insert_metadata(ReactionNetwork *rnp);
 
