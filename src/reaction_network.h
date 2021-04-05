@@ -10,6 +10,7 @@
 #include <stdbool.h>
 #include <pthread.h>
 #include <time.h>
+#include <sqlite3.h>
 
 typedef struct dependentsNode {
   int number_of_dependents; // number of reactions that depend on current reaction.
@@ -30,6 +31,7 @@ typedef struct reactionNetwork {
 
   // filled out by reaction_network_from_file
   char *dir; // directory where reaction network serialization files are
+  sqlite3 *db; // database connection handle. NULL if there is no open database connection.
   int number_of_species;
   int number_of_reactions;
   // we assume that each reaction has zero, one or two reactants
@@ -74,7 +76,9 @@ void initialize_propensities(ReactionNetwork *rnp);
 // directory is an argument so we can serialize into another location
 int reaction_network_to_files(ReactionNetwork *rnp, char *directory);
 
-
+// like reaction_network_to_files except we serialize the reaction network to a
+// sqlite database.
+int reaction_network_to_db(ReactionNetwork *rnp, char *directory);
 
 
 bool reaction_networks_differ(ReactionNetwork *rnpa, ReactionNetwork *rnpb);

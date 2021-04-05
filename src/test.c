@@ -36,9 +36,14 @@ bool test_serialization() {
   bool flag = true;
   char *ronalds_network_dir = "./ronalds_network";
   char *test_network_dir = "./test_network";
+  char *test_network_with_db_dir = "/tmp/test_network_db";
 
   ReactionNetwork *rnp = new_reaction_network_from_files(ronalds_network_dir, false);
   reaction_network_to_files(rnp, test_network_dir);
+  reaction_network_to_db(rnp, test_network_with_db_dir);
+
+
+
   char *cmd = "diff -r --exclude=simulation_histories ./ronalds_network ./test_network > /dev/null";
   int status = system(cmd);
   // status code 0 means no differences

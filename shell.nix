@@ -10,6 +10,7 @@ mkShell rec {
                   meson
                   ninja
                   sqlite
+                  sqlitebrowser
                 ];
 
   CPATH = lib.makeSearchPathOutput "dev" "include" [ clang.libc gsl sqlite ];

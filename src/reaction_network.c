@@ -1,5 +1,32 @@
 #include "reaction_network.h"
 
+char *create_tables =
+  "CREATE TABLE metadata ("
+  "        number_of_species   INTEGER NOT NULL,"
+  "        number_of_reactions INTEGER NOT NULL,"
+  "        factor_duplicate    REAL NOT NULL,"
+  "        factor_two          REAL NOT NULL,"
+  "        factor_zero         REAL NOT NULL"
+  ");"
+
+  "CREATE TABLE reactions ("
+  "        reaction_id         INTEGER NOT NULL PRIMARY KEY,"
+  "        reaction_string     TEXT NOT NULL,"
+  "        number_of_reactants INTEGER NOT NULL,"
+  "        number_of_products  INTEGER NOT NULL,"
+  "        reactant_1          INTEGER,"
+  "        reactant_2          INTEGER,"
+  "        product_1           INTEGER,"
+  "        product_2           INTEGER,"
+  "        rate                REAL NOT NULL"
+  ");"
+
+  "CREATE UNIQUE INDEX reaction_string_idx ON reactions (reaction_string)";
+
+
+
+
+char *reaction_network_db_postix = "/rn.sqlite";
 char *number_of_species_postfix = "/number_of_species";
 char *number_of_reactions_postfix = "/number_of_reactions";
 char *number_of_reactants_postfix = "/number_of_reactants";
@@ -38,6 +65,7 @@ ReactionNetwork *new_reaction_network_from_files(char *directory, bool logging) 
   int step = 2; // hard coding reactions having <= 2 reactants and products
 
   rnp->dir = directory;
+  rnp->db = NULL;
   rnp->logging = logging;
 
 
@@ -227,6 +255,11 @@ ReactionNetwork *new_reaction_network_from_files(char *directory, bool logging) 
 }
 
 void free_reaction_network(ReactionNetwork *rnp) {
+  // terminate database connection if it exists
+  if (rnp->db) {
+    sqlite3_close(rnp->db);
+  }
+
   free(rnp->number_of_reactants);
   free(rnp->reactants[0]);
   free(rnp->reactants);
@@ -513,6 +546,42 @@ int reaction_network_to_files(ReactionNetwork *rnp, char *directory) {
   return 0;
 }
 
+int reaction_network_to_db(ReactionNetwork *rnp, char *directory) {
+  char *end;
+  char path[2048];
+  FILE* file;
+  sqlite3 *db;
+  if (strlen(directory) > 1024) {
+    puts("reaction_network_to_db: directory path too long");
+    return -1;
+  }
+
+  DIR *dir = opendir(directory);
+  if (dir) {
+    puts("reaction_network_to_db: directory already exists");
+    closedir(dir);
+    return -1;
+  }
+
+  if (mkdir(directory, 0777)) {
+    puts("reaction_network_to_db: failed to make directory");
+    return -1;
+  }
+
+  end = stpcpy(path, directory);
+  stpcpy(end, reaction_network_db_postix);
+
+  // TODO: check error code here
+  sqlite3_open(path, &db);
+
+  // TODO: check errors here
+  sqlite3_exec(db, create_tables, NULL, NULL, NULL);
+
+
+
+  sqlite3_close(db);
+  return 0;
+}
 
 bool reaction_networks_differ(ReactionNetwork *rnpa, ReactionNetwork *rnpb) {
   int i, j;
