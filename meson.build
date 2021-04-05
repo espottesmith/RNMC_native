@@ -18,6 +18,7 @@ thread_dep = dependency('threads')
 math_dep = cc.find_library('m', required : false)
 
 common_files = [
+  'src/sql_programs.c',
   'src/reaction_network.c',
   'src/sampler.c',
   'src/simulation.c',
