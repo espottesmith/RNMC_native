@@ -31,7 +31,6 @@ typedef struct reactionNetwork {
 
   // filled out by reaction_network_from_file
   char *dir; // directory where reaction network serialization files are
-  sqlite3 *db; // database connection handle. NULL if there is no open database connection.
   int number_of_species;
   int number_of_reactions;
   // we assume that each reaction has zero, one or two reactants
@@ -61,6 +60,7 @@ typedef struct reactionNetwork {
 } ReactionNetwork;
 
 ReactionNetwork *new_reaction_network_from_files(char *directory, bool logging);
+ReactionNetwork *new_reaction_network_from_db(char *directory, bool logging);
 void free_reaction_network(ReactionNetwork *rnp);
 
 DependentsNode *get_dependency_node(ReactionNetwork *rnp, int index);

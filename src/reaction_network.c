@@ -30,6 +30,32 @@ void free_dependents_node(DependentsNode *dnp) {
   pthread_mutex_destroy(&dnp->mutex);
 }
 
+ReactionNetwork *new_reaction_network_from_db(char *directory, bool logging) {
+  // currently segfaults if files don't exist.
+  ReactionNetwork *rnp = malloc(sizeof(ReactionNetwork));
+  char *end;
+  char path[2048];
+  FILE* file;
+  sqlite3 *db;
+  int return_code;
+  int i, j;
+  int step = 2; // hard coding reactions having <= 2 reactants and products
+
+  rnp->dir = directory;
+  rnp->logging = logging;
+
+  end = stpcpy(path, directory);
+  stpcpy(end, reaction_network_db_postix);
+
+  // TODO: check error code here
+  sqlite3_open(path, &db);
+
+
+
+
+  return rnp;
+}
+
 ReactionNetwork *new_reaction_network_from_files(char *directory, bool logging) {
   // currently segfaults if files don't exist.
   ReactionNetwork *rnp = malloc(sizeof(ReactionNetwork));
@@ -42,7 +68,6 @@ ReactionNetwork *new_reaction_network_from_files(char *directory, bool logging) 
   int step = 2; // hard coding reactions having <= 2 reactants and products
 
   rnp->dir = directory;
-  rnp->db = NULL;
   rnp->logging = logging;
 
 
@@ -233,10 +258,6 @@ ReactionNetwork *new_reaction_network_from_files(char *directory, bool logging) 
 
 void free_reaction_network(ReactionNetwork *rnp) {
   // terminate database connection if it exists
-  if (rnp->db) {
-    sqlite3_close(rnp->db);
-  }
-
   free(rnp->number_of_reactants);
   free(rnp->reactants[0]);
   free(rnp->reactants);
@@ -527,10 +548,18 @@ int reaction_network_to_files(ReactionNetwork *rnp, char *directory) {
 int reaction_network_to_db(ReactionNetwork *rnp, char *directory) {
   char *end;
   char path[2048];
-  char *error = NULL;
-  char sql_command[SQL_STATEMENT_LENGTH];
+  int i;
   FILE* file;
   sqlite3 *db;
+  sqlite3_stmt *stmt;
+  int rc;
+  char reactants_string[1024];
+  char products_string[1024];
+  char reaction_string[2048];
+
+
+
+
   if (strlen(directory) > 1024) {
     puts("reaction_network_to_db: directory path too long");
     return -1;
@@ -554,19 +583,92 @@ int reaction_network_to_db(ReactionNetwork *rnp, char *directory) {
   // TODO: check error code here
   sqlite3_open(path, &db);
 
-  // TODO: check errors here
+
+  // create tables
   sqlite3_exec(db, create_tables, NULL, NULL, NULL);
 
-  insert_metadata_command(rnp, sql_command);
-  // TODO: check errors here
-  sqlite3_exec(db, sql_command, NULL, NULL, NULL);
 
-  int i;
+  // insert metadata
+  rc = sqlite3_prepare_v2(db, insert_metadata, -1, &stmt, NULL);
+  if (rc != SQLITE_OK) {
+    printf("error: %s", sqlite3_errmsg(db));
+    return -1;
+  }
+
+  sqlite3_bind_int(stmt, 1, rnp->number_of_species);
+  sqlite3_bind_int(stmt, 2, rnp->number_of_reactions);
+  sqlite3_step(stmt);
+  sqlite3_finalize(stmt);
+
+
+  // insert reactions
+  rc = sqlite3_prepare_v2(db, insert_reaction, -1, &stmt, NULL);
+  if (rc != SQLITE_OK) {
+    printf("error: %s", sqlite3_errmsg(db));
+    return -1;
+  }
 
   for (i = 0; i < rnp->number_of_reactions; i++) {
-    insert_reaction_command(rnp, i, sql_command);
-    sqlite3_exec(db, sql_command, NULL, NULL, NULL);
+
+    // generating the reaction string which we use to identify repeats
+    switch (rnp->number_of_reactants[i])
+    {
+      case 0: {
+        reactants_string[0] = 0;
+        break;
+      }
+      case 1: {
+        sprintf(reactants_string, "%d",rnp->reactants[i][0]);
+        break;
+      }
+      default: {
+        sprintf(reactants_string, "%d+%d",
+                rnp->reactants[i][0],
+                rnp->reactants[i][1]);
+        break;
+      }
+    }
+
+    switch (rnp->number_of_products[i])
+    {
+      case 0: {
+        products_string[0] = 0;
+        break;
+      }
+      case 1: {
+        sprintf(products_string, "%d",rnp->products[i][0]);
+        break;
+      }
+      default: {
+        sprintf(products_string, "%d+%d",
+                rnp->products[i][0],
+                rnp->products[i][1]);
+        break;
+      }
+    }
+    printf("%d",i);
+    sprintf(reaction_string, "%s->%s", reactants_string, products_string);
+
+    sqlite3_reset(stmt);
+    sqlite3_clear_bindings(stmt);
+
+    sqlite3_bind_int(stmt, 1, i);
+    sqlite3_bind_text(stmt, 2, reaction_string, -1, NULL);
+    sqlite3_bind_int(stmt, 3, rnp->number_of_reactants[i]);
+    sqlite3_bind_int(stmt, 4, rnp->number_of_products[i]);
+    sqlite3_bind_int(stmt, 5, rnp->reactants[i][0]);
+    sqlite3_bind_int(stmt, 6, rnp->reactants[i][1]);
+    sqlite3_bind_int(stmt, 7, rnp->products[i][0]);
+    sqlite3_bind_int(stmt, 8, rnp->products[i][1]);
+    sqlite3_bind_double(stmt, 9, rnp->rates[i]);
+    sqlite3_step(stmt);
   }
+
+  sqlite3_finalize(stmt);
+
+
+
+
 
   // save factor_zero
   end = stpcpy(path, directory);
