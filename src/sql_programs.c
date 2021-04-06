@@ -4,10 +4,7 @@
 char *create_tables =
   "CREATE TABLE metadata ("
   "        number_of_species   INTEGER NOT NULL,"
-  "        number_of_reactions INTEGER NOT NULL,"
-  "        factor_duplicate    REAL NOT NULL,"
-  "        factor_two          REAL NOT NULL,"
-  "        factor_zero         REAL NOT NULL"
+  "        number_of_reactions INTEGER NOT NULL"
   ");"
 
   "CREATE TABLE reactions ("
@@ -24,17 +21,16 @@ char *create_tables =
 
   "CREATE UNIQUE INDEX reaction_string_idx ON reactions (reaction_string)";
 
+void insert_metadata_command(ReactionNetwork *rnp, char *command_buffer) {
+  char *header =
+    "INSERT INTO metadata ("
+    "        number_of_species,"
+    "        number_of_reactions)";
 
-char *insert_metadata_header =
-  "INSERT INTO metadata ("
-  "        number_of_species,"
-  "        number_of_reactions,"
-  "        factor_duplicate,"
-  "        factor_two,"
-  "        factor_zero)";
+  sprintf(command_buffer,
+          "%s\n VALUES (%d, %d);",
+          header,
+          rnp->number_of_species,
+          rnp->number_of_reactions);
 
-char *insert_metadata(ReactionNetwork *rnp) {
-  char *sql_statement = malloc(sizeof(char) * SQL_STATEMENT_LENGTH);
-  char *end;
-  return sql_statement;
 }

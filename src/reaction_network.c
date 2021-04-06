@@ -523,9 +523,12 @@ int reaction_network_to_files(ReactionNetwork *rnp, char *directory) {
   return 0;
 }
 
+
 int reaction_network_to_db(ReactionNetwork *rnp, char *directory) {
   char *end;
   char path[2048];
+  char *error = NULL;
+  char sql_command[SQL_STATEMENT_LENGTH];
   FILE* file;
   sqlite3 *db;
   if (strlen(directory) > 1024) {
@@ -554,7 +557,9 @@ int reaction_network_to_db(ReactionNetwork *rnp, char *directory) {
   // TODO: check errors here
   sqlite3_exec(db, create_tables, NULL, NULL, NULL);
 
-
+  insert_metadata_command(rnp, sql_command);
+  // TODO: check errors here
+  sqlite3_exec(db, sql_command, NULL, NULL, NULL);
 
   sqlite3_close(db);
   return 0;
