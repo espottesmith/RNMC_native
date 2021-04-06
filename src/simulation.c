@@ -187,10 +187,22 @@ void simulation_history_to_file(Simulation *sp) {
   while (chunk) {
     for (i = 0; i < chunk->next_free_index; i++) {
       fprintf(reaction_file, "%d\n", chunk->data[i].reaction);
-      fprintf(time_file, "%1.13e\n", chunk->data[i].time);
+      fprintf(time_file, "%1.9e\n", chunk->data[i].time);
     }
     chunk = chunk->next_chunk;
   }
   fclose(reaction_file);
   fclose(time_file);
 }
+
+bool check_state_positivity(Simulation *sp) {
+  int i;
+  for (i = 0; i < sp->rn->number_of_species; i++) {
+    if (sp->state[i] < 0) {
+      puts("negative state encountered!!!");
+      return false;
+    }
+  }
+  return true;
+}
+

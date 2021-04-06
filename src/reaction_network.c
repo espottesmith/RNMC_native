@@ -1,5 +1,9 @@
 #include "reaction_network.h"
+#include "sql_programs.h"
 
+
+
+char *reaction_network_db_postix = "/rn.sqlite";
 char *number_of_species_postfix = "/number_of_species";
 char *number_of_reactions_postfix = "/number_of_reactions";
 char *number_of_reactants_postfix = "/number_of_reactants";
@@ -16,6 +20,7 @@ void initialize_dependents_node(DependentsNode *dnp) {
   dnp->number_of_dependents = -1;
   dnp->dependents = NULL;
   pthread_mutex_init(&dnp->mutex, NULL);
+  dnp->first_observed = -1;
 }
 
 void free_dependents_node(DependentsNode *dnp) {
@@ -25,7 +30,7 @@ void free_dependents_node(DependentsNode *dnp) {
   pthread_mutex_destroy(&dnp->mutex);
 }
 
-ReactionNetwork *new_reaction_network(char *directory, bool logging) {
+ReactionNetwork *new_reaction_network_from_files(char *directory, bool logging) {
   // currently segfaults if files don't exist.
   ReactionNetwork *rnp = malloc(sizeof(ReactionNetwork));
   char *end;
@@ -37,6 +42,7 @@ ReactionNetwork *new_reaction_network(char *directory, bool logging) {
   int step = 2; // hard coding reactions having <= 2 reactants and products
 
   rnp->dir = directory;
+  rnp->db = NULL;
   rnp->logging = logging;
 
 
@@ -217,6 +223,8 @@ ReactionNetwork *new_reaction_network(char *directory, bool logging) {
     fclose(file);
   }
 
+  rnp->start_time = time(NULL);
+
   initialize_dependency_graph(rnp);
   initialize_propensities(rnp);
 
@@ -224,6 +232,11 @@ ReactionNetwork *new_reaction_network(char *directory, bool logging) {
 }
 
 void free_reaction_network(ReactionNetwork *rnp) {
+  // terminate database connection if it exists
+  if (rnp->db) {
+    sqlite3_close(rnp->db);
+  }
+
   free(rnp->number_of_reactants);
   free(rnp->reactants[0]);
   free(rnp->reactants);
@@ -307,10 +320,11 @@ void compute_dependency_node(ReactionNetwork *rnp, int index) {
     }
     current_reaction++;
   }
+  node->first_observed = time(NULL) - rnp->start_time;
+
   if (rnp->logging)
-    printf("computed dependents of reaction %d\n",index);
-
-
+    printf("dependency node: time = %ld , reaction = %d\n",
+           node->first_observed, index);
 }
 
 void initialize_dependency_graph(ReactionNetwork *rnp) {
@@ -386,7 +400,7 @@ void initialize_propensities(ReactionNetwork *rnp) {
 
 
 
-int reaction_network_to_file(ReactionNetwork *rnp, char *directory) {
+int reaction_network_to_files(ReactionNetwork *rnp, char *directory) {
   char *end;
   char path[2048];
   FILE* file;
@@ -509,6 +523,86 @@ int reaction_network_to_file(ReactionNetwork *rnp, char *directory) {
   return 0;
 }
 
+
+int reaction_network_to_db(ReactionNetwork *rnp, char *directory) {
+  char *end;
+  char path[2048];
+  char *error = NULL;
+  char sql_command[SQL_STATEMENT_LENGTH];
+  FILE* file;
+  sqlite3 *db;
+  if (strlen(directory) > 1024) {
+    puts("reaction_network_to_db: directory path too long");
+    return -1;
+  }
+
+  DIR *dir = opendir(directory);
+  if (dir) {
+    puts("reaction_network_to_db: directory already exists");
+    closedir(dir);
+    return -1;
+  }
+
+  if (mkdir(directory, 0777)) {
+    puts("reaction_network_to_db: failed to make directory");
+    return -1;
+  }
+
+  end = stpcpy(path, directory);
+  stpcpy(end, reaction_network_db_postix);
+
+  // TODO: check error code here
+  sqlite3_open(path, &db);
+
+  // TODO: check errors here
+  sqlite3_exec(db, create_tables, NULL, NULL, NULL);
+
+  insert_metadata_command(rnp, sql_command);
+  // TODO: check errors here
+  sqlite3_exec(db, sql_command, NULL, NULL, NULL);
+
+  int i;
+
+  for (i = 0; i < rnp->number_of_reactions; i++) {
+    insert_reaction_command(rnp, i, sql_command);
+    sqlite3_exec(db, sql_command, NULL, NULL, NULL);
+  }
+
+  // save factor_zero
+  end = stpcpy(path, directory);
+  stpcpy(end, factor_zero_postfix);
+  file = fopen(path, "w");
+  fprintf(file, "%e\n", rnp->factor_zero);
+  fclose(file);
+
+  // save factor_two
+  end = stpcpy(path, directory);
+  stpcpy(end, factor_two_postfix);
+  file = fopen(path, "w");
+  fprintf(file, "%e\n", rnp->factor_two);
+  fclose(file);
+
+
+  // save factor_duplicate
+  end = stpcpy(path, directory);
+  stpcpy(end, factor_duplicate_postfix);
+  file = fopen(path, "w");
+  fprintf(file, "%e\n", rnp->factor_duplicate);
+  fclose(file);
+
+  // save initial_state
+  end = stpcpy(path, directory);
+  stpcpy(end, initial_state_postfix);
+  file = fopen(path, "w");
+  for (i = 0; i < rnp->number_of_species; i++) {
+    fprintf(file, "%d\n", rnp->initial_state[i]);
+  }
+  fclose(file);
+
+
+  sqlite3_close(db);
+  return 0;
+}
 
 bool reaction_networks_differ(ReactionNetwork *rnpa, ReactionNetwork *rnpb) {
   int i, j;

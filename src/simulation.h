@@ -56,4 +56,6 @@ void run_until(Simulation *sp, double time_cutoff);
 void run_for(Simulation *sp, int step_cutoff);
 void simulation_history_to_file(Simulation *sp);
 
+bool check_state_positivity(Simulation *sp);
+
 #endif

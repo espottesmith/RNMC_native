@@ -1,4 +1,4 @@
-with (import /home/danielbarter/nixpkgs {});
+with (import <nixpkgs> {});
 
 mkShell rec {
   buildInputs = [ clang
@@ -7,7 +7,11 @@ mkShell rec {
                   lldb
                   gdb
                   valgrind
+                  meson
+                  ninja
+                  sqlite
+                  sqlitebrowser
                 ];
 
-  CPATH = lib.makeSearchPathOutput "dev" "include" [ clang.libc gsl ];
+  CPATH = lib.makeSearchPathOutput "dev" "include" [ clang.libc gsl sqlite ];
 }

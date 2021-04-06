@@ -9,6 +9,8 @@
 #include <sys/types.h>
 #include <stdbool.h>
 #include <pthread.h>
+#include <time.h>
+#include <sqlite3.h>
 
 typedef struct dependentsNode {
   int number_of_dependents; // number of reactions that depend on current reaction.
@@ -16,6 +18,7 @@ typedef struct dependentsNode {
   int *dependents; // reactions which depend on current reaction.
   // dependents is set to NULL if reaction hasn't been encountered before
   pthread_mutex_t mutex; // mutex needed because simulation thread initialize dependents
+  time_t first_observed; // time in seconds since start of program when reaction first observed
 } DependentsNode;
 
 // struct for storing the static reaction network state which
@@ -28,6 +31,7 @@ typedef struct reactionNetwork {
 
   // filled out by reaction_network_from_file
   char *dir; // directory where reaction network serialization files are
+  sqlite3 *db; // database connection handle. NULL if there is no open database connection.
   int number_of_species;
   int number_of_reactions;
   // we assume that each reaction has zero, one or two reactants
@@ -52,10 +56,11 @@ typedef struct reactionNetwork {
 
   // dependency graph. List of DependencyNodes number_of_reactions long.
   DependentsNode *dependency_graph;
+  time_t start_time; // start time of simulation
   bool logging;
 } ReactionNetwork;
 
-ReactionNetwork *new_reaction_network(char *directory, bool logging);
+ReactionNetwork *new_reaction_network_from_files(char *directory, bool logging);
 void free_reaction_network(ReactionNetwork *rnp);
 
 DependentsNode *get_dependency_node(ReactionNetwork *rnp, int index);
@@ -69,7 +74,13 @@ void initialize_propensities(ReactionNetwork *rnp);
 // serialize a reaction network to the disk (not including initial propensities
 // and dependency graph). Each attribute is stored in directory/attribute_name
 // directory is an argument so we can serialize into another location
-int reaction_network_to_file(ReactionNetwork *rnp, char *directory);
+int reaction_network_to_files(ReactionNetwork *rnp, char *directory);
+
+// like reaction_network_to_files except we serialize the reaction network to a
+// sqlite database.
+int reaction_network_to_db(ReactionNetwork *rnp, char *directory);
+
+
 bool reaction_networks_differ(ReactionNetwork *rnpa, ReactionNetwork *rnpb);
 
 #endif
