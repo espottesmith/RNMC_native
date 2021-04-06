@@ -1,4 +1,5 @@
 #include "solvers.h"
+#include <signal.h>
 
 // generic solve
 
@@ -268,11 +269,18 @@ int event_solve_tree(void *solve_treep, double *dtp) {
   int m;
   double r1,r2;
 
-  if (p->propensity_sum == 0.0) return -1;
+
+  if (p->number_of_active_reactions == 0) {
+    return -1;
+  }
+
 
   r1 = p->sampler->generate(p->sampler);
   r2 = p->sampler->generate(p->sampler);
-  m = find_solve_tree(p,r1 * p->propensity_sum);
+
+  double value = r1 * p->propensity_sum;
+
+  m = find_solve_tree(p,value);
   *dtp = - log(r2) / p->propensity_sum;
 
   return m;

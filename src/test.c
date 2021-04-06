@@ -17,8 +17,23 @@ bool test_samplers() {
     }
   }
 
+  double wide_propensities[] = {1e-300, 1e300, 1e300};
+
+  Solve *r = new_solve(linear, 42, 3, wide_propensities);
+  Solve *s = new_solve(tree, 42, 3, wide_propensities);
+  for (int i = 0; i < 1000; i++) {
+    int r_sample = r->event(p, &dt);
+    int s_sample = s->event(q, &dt);
+    if (r_sample != s_sample) {
+      result = false;
+      break;
+    }
+  }
+
   free_solve(p);
   free_solve(q);
+  free_solve(r);
+  free_solve(s);
 
   if (result)
     puts(ANSI_COLOR_GREEN "passed: sampler test" ANSI_COLOR_RESET);
@@ -26,6 +41,7 @@ bool test_samplers() {
     puts(ANSI_COLOR_RED "failed: sampler test" ANSI_COLOR_RESET);
     flag = false;
   }
+
 
   return flag;
 }

@@ -22,6 +22,5 @@ void free_sampler(Sampler *p) {
 
 double generate_method(void *samplerp) {
   Sampler *p = (Sampler *) samplerp;
-  return gsl_rng_uniform(p->internal_rng_state);
+  return gsl_rng_uniform_pos(p->internal_rng_state);
 }
-
