@@ -561,6 +561,45 @@ int reaction_network_to_db(ReactionNetwork *rnp, char *directory) {
   // TODO: check errors here
   sqlite3_exec(db, sql_command, NULL, NULL, NULL);
 
+  int i;
+
+  for (i = 0; i < rnp->number_of_reactions; i++) {
+    insert_reaction_command(rnp, i, sql_command);
+    sqlite3_exec(db, sql_command, NULL, NULL, NULL);
+  }
+
+  // save factor_zero
+  end = stpcpy(path, directory);
+  stpcpy(end, factor_zero_postfix);
+  file = fopen(path, "w");
+  fprintf(file, "%e\n", rnp->factor_zero);
+  fclose(file);
+
+  // save factor_two
+  end = stpcpy(path, directory);
+  stpcpy(end, factor_two_postfix);
+  file = fopen(path, "w");
+  fprintf(file, "%e\n", rnp->factor_two);
+  fclose(file);
+
+
+  // save factor_duplicate
+  end = stpcpy(path, directory);
+  stpcpy(end, factor_duplicate_postfix);
+  file = fopen(path, "w");
+  fprintf(file, "%e\n", rnp->factor_duplicate);
+  fclose(file);
+
+  // save initial_state
+  end = stpcpy(path, directory);
+  stpcpy(end, initial_state_postfix);
+  file = fopen(path, "w");
+  for (i = 0; i < rnp->number_of_species; i++) {
+    fprintf(file, "%d\n", rnp->initial_state[i]);
+  }
+  fclose(file);
+
+
   sqlite3_close(db);
   return 0;
 }
