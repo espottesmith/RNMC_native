@@ -585,13 +585,14 @@ int reaction_network_to_db(ReactionNetwork *rnp, char *directory) {
 
 
   // create tables
+  // TODO: check error here
   sqlite3_exec(db, create_tables, NULL, NULL, NULL);
 
 
   // insert metadata
   rc = sqlite3_prepare_v2(db, insert_metadata, -1, &stmt, NULL);
   if (rc != SQLITE_OK) {
-    printf("error: %s", sqlite3_errmsg(db));
+    printf("reaction_network_to_db error: %s", sqlite3_errmsg(db));
     return -1;
   }
 
@@ -604,7 +605,7 @@ int reaction_network_to_db(ReactionNetwork *rnp, char *directory) {
   // insert reactions
   rc = sqlite3_prepare_v2(db, insert_reaction, -1, &stmt, NULL);
   if (rc != SQLITE_OK) {
-    printf("error: %s", sqlite3_errmsg(db));
+    printf("reaction_network_to_db error: %s", sqlite3_errmsg(db));
     return -1;
   }
 
@@ -646,7 +647,6 @@ int reaction_network_to_db(ReactionNetwork *rnp, char *directory) {
         break;
       }
     }
-    printf("%d",i);
     sprintf(reaction_string, "%s->%s", reactants_string, products_string);
 
     sqlite3_reset(stmt);
