@@ -105,7 +105,10 @@ Dispatcher *new_dispatcher(char *reaction_network_dir,
   file = fopen(path,"r");
   if (!file) {
 
-    printf("new_dispatcher: cannot open %s. Defaulting to time cutoff.\n",path);
+    if (logging) {
+      printf("new_dispatcher: cannot open %s. Defaulting to time cutoff.\n",
+             path);
+    }
     // read time_cutoff
     end = stpcpy(path, simulation_params);
     stpcpy(end, time_cutoff_postfix);

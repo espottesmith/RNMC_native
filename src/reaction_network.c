@@ -30,6 +30,25 @@ void free_dependents_node(DependentsNode *dnp) {
   pthread_mutex_destroy(&dnp->mutex);
 }
 
+ReactionNetwork *new_reaction_network(char *directory, bool logging) {
+  char *end;
+  char path[2048];
+  FILE *file;
+  end = stpcpy(path, directory);
+  stpcpy(end, reaction_network_db_postix);
+
+  file = fopen(path, "r");
+  if (!file) {
+    if (logging) {
+      printf("new_reaction_network: cannot open %s. Defaulting to file interface", path);
+    }
+    return new_reaction_network_from_files(directory, logging);
+  } else {
+    fclose(file);
+    return new_reaction_network_from_db(directory, logging);
+  }
+}
+
 ReactionNetwork *new_reaction_network_from_db(char *directory, bool logging) {
   // currently segfaults if files don't exist.
   ReactionNetwork *rnp = malloc(sizeof(ReactionNetwork));

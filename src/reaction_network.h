@@ -61,6 +61,7 @@ typedef struct reactionNetwork {
 
 ReactionNetwork *new_reaction_network_from_files(char *directory, bool logging);
 ReactionNetwork *new_reaction_network_from_db(char *directory, bool logging);
+ReactionNetwork *new_reaction_network(char *directory, bool logging);
 void free_reaction_network(ReactionNetwork *rnp);
 
 DependentsNode *get_dependency_node(ReactionNetwork *rnp, int index);
