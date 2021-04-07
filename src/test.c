@@ -82,7 +82,7 @@ bool test_serialization() {
     puts(ANSI_COLOR_RED "failed: ReactionNetwork to db to ReactionNetwork test" ANSI_COLOR_RESET);
     flag = false;
   } else {
-    puts(ANSI_COLOR_GREEN "passed: ReactionNetwork to file to ReactionNetwork test" ANSI_COLOR_RESET);
+    puts(ANSI_COLOR_GREEN "passed: ReactionNetwork to db to ReactionNetwork test" ANSI_COLOR_RESET);
   }
 
   free_reaction_network(rnp);

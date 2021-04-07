@@ -39,7 +39,7 @@ char *insert_reaction =
   "        reactant_2,"
   "        product_1,"
   "        product_2,"
-  "        rate)"
+  "        rate) "
   "VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9);";
 
 char *get_metadata =
@@ -53,5 +53,5 @@ char *get_reactions =
   "       reactant_2,"
   "       product_1,"
   "       product_2,"
-  "       rate"
+  "       rate "
   "FROM reactions;";
