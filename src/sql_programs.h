@@ -6,7 +6,8 @@
 char *create_tables;
 char *insert_metadata;
 char *insert_reaction;
-
+char *get_metadata;
+char *get_reactions;
 
 
 #endif

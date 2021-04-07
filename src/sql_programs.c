@@ -41,3 +41,17 @@ char *insert_reaction =
   "        product_2,"
   "        rate)"
   "VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9);";
+
+char *get_metadata =
+  "SELECT * FROM metadata;";
+
+char *get_reactions =
+  "SELECT reaction_id,"
+  "       number_of_reactants,"
+  "       number_of_products,"
+  "       reactant_1,"
+  "       reactant_2,"
+  "       product_1,"
+  "       product_2,"
+  "       rate"
+  "FROM reactions;";

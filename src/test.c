@@ -52,14 +52,10 @@ bool test_serialization() {
   bool flag = true;
   char *ronalds_network_dir = "./ronalds_network";
   char *test_network_dir = "./test_network";
-  char *test_network_with_db_dir = "/tmp/test_network_db";
+  char *test_network_with_db_dir = "./test_network_db";
 
   ReactionNetwork *rnp = new_reaction_network_from_files(ronalds_network_dir, false);
   reaction_network_to_files(rnp, test_network_dir);
-  reaction_network_to_db(rnp, test_network_with_db_dir);
-
-
-
   char *cmd = "diff -r --exclude=simulation_histories ./ronalds_network ./test_network > /dev/null";
   int status = system(cmd);
   // status code 0 means no differences
@@ -79,9 +75,21 @@ bool test_serialization() {
     puts(ANSI_COLOR_GREEN "passed: ReactionNetwork to file to ReactionNetwork test" ANSI_COLOR_RESET);
   }
 
+
+  reaction_network_to_db(rnp, test_network_with_db_dir);
+  ReactionNetwork *rnp_from_db = new_reaction_network_from_db(test_network_with_db_dir, false);
+  if (reaction_networks_differ(rnp, rnp_from_db)) {
+    puts(ANSI_COLOR_RED "failed: ReactionNetwork to db to ReactionNetwork test" ANSI_COLOR_RESET);
+    flag = false;
+  } else {
+    puts(ANSI_COLOR_GREEN "passed: ReactionNetwork to file to ReactionNetwork test" ANSI_COLOR_RESET);
+  }
+
   free_reaction_network(rnp);
   free_reaction_network(rnp_copy);
+  free_reaction_network(rnp_from_db);
   status = system("rm -r ./test_network");
+  status = system("rm -r ./test_network_db");
   return flag;
 }
 

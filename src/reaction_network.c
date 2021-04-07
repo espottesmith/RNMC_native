@@ -38,8 +38,10 @@ ReactionNetwork *new_reaction_network_from_db(char *directory, bool logging) {
   FILE* file;
   sqlite3 *db;
   int return_code;
-  int i, j;
-  int step = 2; // hard coding reactions having <= 2 reactants and products
+  int i;
+  int reaction_index;
+  sqlite3_stmt *stmt;
+  int rc;
 
   rnp->dir = directory;
   rnp->logging = logging;
@@ -50,6 +52,116 @@ ReactionNetwork *new_reaction_network_from_db(char *directory, bool logging) {
   // TODO: check error code here
   sqlite3_open(path, &db);
 
+  rc = sqlite3_prepare_v2(db, get_metadata, -1, &stmt, NULL);
+  if (rc != SQLITE_OK) {
+    printf("new_reaction_network_from_db error: %s\n", sqlite3_errmsg(db));
+    return NULL;
+  }
+
+  // collecting number of species and number of reactions
+  sqlite3_step(stmt);
+  rnp->number_of_species = sqlite3_column_int(stmt, 0);
+  rnp->number_of_reactions = sqlite3_column_int(stmt, 1);
+  sqlite3_finalize(stmt);
+
+  // initializing all the arrays to be filled from the database
+  rnp->number_of_reactants = malloc(sizeof(int) * rnp->number_of_reactions);
+
+
+  int *reactants_values = malloc(sizeof(int) * 2 * rnp->number_of_reactions);
+  rnp->reactants = malloc(sizeof(int *) * rnp->number_of_reactions);
+  for (i = 0; i < rnp->number_of_reactions; i++) {
+    rnp->reactants[i] = reactants_values + 2 * i;
+  }
+
+  rnp->number_of_products = malloc(sizeof(int) * rnp->number_of_reactions);
+
+
+  int *products_values = malloc(sizeof(int) * 2 * rnp->number_of_reactions);
+  rnp->products = malloc(sizeof(int *) * rnp->number_of_reactions);
+  for (i = 0; i < rnp->number_of_reactions; i++) {
+    rnp->products[i] = products_values + 2 * i;
+  }
+
+  rnp->rates = malloc(sizeof(double) * rnp->number_of_reactions);
+
+  rc = sqlite3_prepare_v2(db, get_reactions, -1, &stmt, NULL);
+  if (rc != SQLITE_OK) {
+    printf("new_reaction_network_from_db error: %s\n", sqlite3_errmsg(db));
+    return NULL;
+  }
+
+  for (i = 0; i < rnp->number_of_reactions; i++) {
+    sqlite3_step(stmt);
+
+    reaction_index = sqlite3_column_int(stmt, 0);
+    rnp->number_of_reactants[reaction_index] = sqlite3_column_int(stmt,1);
+    rnp->number_of_products[reaction_index] = sqlite3_column_int(stmt,2);
+    rnp->reactants[reaction_index][0] = sqlite3_column_int(stmt,3);
+    rnp->reactants[reaction_index][1] = sqlite3_column_int(stmt,4);
+    rnp->products[reaction_index][0] = sqlite3_column_int(stmt,5);
+    rnp->products[reaction_index][1] = sqlite3_column_int(stmt,6);
+    rnp->rates[reaction_index] = sqlite3_column_double(stmt,7);
+  }
+
+  sqlite3_finalize(stmt);
+
+  // read factor_zero
+  end = stpcpy(path, directory);
+  stpcpy(end, factor_zero_postfix);
+  file = fopen(path, "r");
+  if (!file) {
+    printf("new_reaction_network_from_db: cannot open %s\n",path);
+    return NULL;
+  } else {
+    return_code = fscanf(file, "%lf\n", &rnp->factor_zero);
+    fclose(file);
+  }
+
+  // read factor_two
+  end = stpcpy(path, directory);
+  stpcpy(end, factor_two_postfix);
+  file = fopen(path, "r");
+  if (!file) {
+    printf("new_reaction_network_from_db: cannot open %s\n",path);
+    return NULL;
+  } else {
+    return_code = fscanf(file, "%lf\n", &rnp->factor_two);
+    fclose(file);
+  }
+
+  // read factor_duplicate
+  end = stpcpy(path, directory);
+  stpcpy(end, factor_duplicate_postfix);
+  file = fopen(path, "r");
+  if (!file) {
+    printf("new_reaction_network_from_db: cannot open %s\n",path);
+    return NULL;
+  } else {
+    return_code = fscanf(file, "%lf\n", &rnp->factor_duplicate);
+    fclose(file);
+  }
+
+  // read initial_state
+  rnp->initial_state = malloc(sizeof(int) * rnp->number_of_species);
+  end = stpcpy(path, directory);
+  stpcpy(end, initial_state_postfix);
+  file = fopen(path, "r");
+  if (!file) {
+    printf("new_reaction_network_from_files: cannot open %s\n",path);
+    return NULL;
+  } else {
+
+    for (i = 0; i < rnp->number_of_species; i++) {
+      return_code = fscanf(file, "%d\n", rnp->initial_state + i);
+    }
+    fclose(file);
+  }
+
+  rnp->start_time = time(NULL);
+
+  initialize_dependency_graph(rnp);
+  initialize_propensities(rnp);
 
 
 
@@ -76,7 +188,7 @@ ReactionNetwork *new_reaction_network_from_files(char *directory, bool logging) 
   stpcpy(end, number_of_species_postfix);
   file = fopen(path, "r");
   if (!file) {
-    printf("new_reaction_network: cannot open %s\n",path);
+    printf("new_reaction_network_from_files: cannot open %s\n",path);
     return NULL;
   } else {
     return_code = fscanf(file, "%d\n", &rnp->number_of_species);
@@ -88,7 +200,7 @@ ReactionNetwork *new_reaction_network_from_files(char *directory, bool logging) 
   stpcpy(end, number_of_reactions_postfix);
   file = fopen(path, "r");
   if (!file) {
-    printf("new_reaction_network: cannot open %s\n",path);
+    printf("new_reaction_network_from_files: cannot open %s\n",path);
     return NULL;
   } else {
     return_code = fscanf(file, "%d\n", &rnp->number_of_reactions);
@@ -101,7 +213,7 @@ ReactionNetwork *new_reaction_network_from_files(char *directory, bool logging) 
   stpcpy(end, number_of_reactants_postfix);
   file = fopen(path, "r");
   if (!file) {
-    printf("new_reaction_network: cannot open %s\n",path);
+    printf("new_reaction_network_from_files: cannot open %s\n",path);
     return NULL;
   } else {
     for (i = 0; i < rnp->number_of_reactions; i++) {
@@ -125,7 +237,7 @@ ReactionNetwork *new_reaction_network_from_files(char *directory, bool logging) 
   stpcpy(end, reactants_postfix);
   file = fopen(path, "r");
   if (!file) {
-    printf("new_reaction_network: cannot open %s\n",path);
+    printf("new_reaction_network_from_files: cannot open %s\n",path);
     return NULL;
   } else {
     for (i = 0; i < rnp->number_of_reactions; i++) {
@@ -144,7 +256,7 @@ ReactionNetwork *new_reaction_network_from_files(char *directory, bool logging) 
   stpcpy(end, number_of_products_postfix);
   file = fopen(path, "r");
   if (!file) {
-    printf("new_reaction_network: cannot open %s\n",path);
+    printf("new_reaction_network_from_files: cannot open %s\n",path);
     return NULL;
   } else {
     for (i = 0; i < rnp->number_of_reactions; i++) {
@@ -168,7 +280,7 @@ ReactionNetwork *new_reaction_network_from_files(char *directory, bool logging) 
   stpcpy(end, products_postfix);
   file = fopen(path, "r");
   if (!file) {
-    printf("new_reaction_network: cannot open %s\n",path);
+    printf("new_reaction_network_from_files: cannot open %s\n",path);
     return NULL;
   } else {
     for (i = 0; i < rnp->number_of_reactions; i++) {
@@ -185,7 +297,7 @@ ReactionNetwork *new_reaction_network_from_files(char *directory, bool logging) 
   stpcpy(end, factor_zero_postfix);
   file = fopen(path, "r");
   if (!file) {
-    printf("new_reaction_network: cannot open %s\n",path);
+    printf("new_reaction_network_from_files: cannot open %s\n",path);
     return NULL;
   } else {
     return_code = fscanf(file, "%lf\n", &rnp->factor_zero);
@@ -197,7 +309,7 @@ ReactionNetwork *new_reaction_network_from_files(char *directory, bool logging) 
   stpcpy(end, factor_two_postfix);
   file = fopen(path, "r");
   if (!file) {
-    printf("new_reaction_network: cannot open %s\n",path);
+    printf("new_reaction_network_from_files: cannot open %s\n",path);
     return NULL;
   } else {
     return_code = fscanf(file, "%lf\n", &rnp->factor_two);
@@ -209,7 +321,7 @@ ReactionNetwork *new_reaction_network_from_files(char *directory, bool logging) 
   stpcpy(end, factor_duplicate_postfix);
   file = fopen(path, "r");
   if (!file) {
-    printf("new_reaction_network: cannot open %s\n",path);
+    printf("new_reaction_network_from_files: cannot open %s\n",path);
     return NULL;
   } else {
     return_code = fscanf(file, "%lf\n", &rnp->factor_duplicate);
@@ -222,7 +334,7 @@ ReactionNetwork *new_reaction_network_from_files(char *directory, bool logging) 
   stpcpy(end, rates_postfix);
   file = fopen(path, "r");
   if (!file) {
-    printf("new_reaction_network: cannot open %s\n",path);
+    printf("new_reaction_network_from_files: cannot open %s\n",path);
     return NULL;
   } else {
     for (i = 0; i < rnp->number_of_reactions; i++) {
@@ -238,7 +350,7 @@ ReactionNetwork *new_reaction_network_from_files(char *directory, bool logging) 
   stpcpy(end, initial_state_postfix);
   file = fopen(path, "r");
   if (!file) {
-    printf("new_reaction_network: cannot open %s\n",path);
+    printf("new_reaction_network_from_files: cannot open %s\n",path);
     return NULL;
   } else {
 
@@ -257,7 +369,6 @@ ReactionNetwork *new_reaction_network_from_files(char *directory, bool logging) 
 }
 
 void free_reaction_network(ReactionNetwork *rnp) {
-  // terminate database connection if it exists
   free(rnp->number_of_reactants);
   free(rnp->reactants[0]);
   free(rnp->reactants);
