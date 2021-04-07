@@ -181,6 +181,8 @@ ReactionNetwork *new_reaction_network_from_db(char *directory, bool logging) {
     fclose(file);
   }
 
+  sqlite3_close(db);
+
   rnp->start_time = time(NULL);
 
   initialize_dependency_graph(rnp);
