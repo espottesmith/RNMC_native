@@ -21,17 +21,19 @@ meson test
 Inorder to remain indipendent of any particular language wrapper, RNMC ingests reaction networks from a series of files. A folder containing these files is the first argument to `RNMC`
 - `number_of_reactions`:
 - `number_of_species`:
-- `initial_state`: initial state of the simulation.
 - `number_of_products`: number of products of each reaction
 - `products`: products of each reaction
 - `number_of_reactants`: number of reactants of each reaction
 - `reactants`: reactants of each reaction
 - `rates`: rates for each reaction
+- `initial_state`: initial state of the simulation.
 - `factor_zero`: rate modifier for reactions of the form (nothing) -> ...
 - `factor_two`: rate modifier for reactions of the form A + B -> ...
 - `factor_duplicate`: rate modifier for reactions of the form A + A -> ...
 
 See `./test_materials/ronalds_network` for an example (thanks Ronald!)
+
+Alternatively, the first 7 of these files can be wrapped up into a sqlite database. This is useful when dealing with reaction networks with hundreds of millions of reactions. The schema is avaliable in `src/sql_programs.c`.
 
 
 ### simulation_params
