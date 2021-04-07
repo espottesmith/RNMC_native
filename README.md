@@ -4,7 +4,7 @@ RNMC is a program for simulating reaction networks heavily inspired by [SPPARKS]
 
 ### Dependencies
 
-RNMC depends on [GSL](https://www.gnu.org/software/gsl/) for pseudo random number generation. Make sure that `CPATH`, `LIBRARY_PATH` and `LD_LIBRARY_PATH` are set appropriately if you aren't using a version of GSL bundled with your system.
+RNMC depends on [GSL](https://www.gnu.org/software/gsl/) for pseudo random number generation and [sqlite](https://www.sqlite.org/index.html) for the database interface. Make sure that `CPATH`, `LIBRARY_PATH` and `LD_LIBRARY_PATH` are set appropriately if you aren't using versions bundled with your system.
 
 ### Building
 
