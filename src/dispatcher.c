@@ -106,7 +106,7 @@ Dispatcher *new_dispatcher(char *reaction_network_dir,
   if (!file) {
 
     if (logging) {
-      printf("new_dispatcher: cannot open %s. Defaulting to time cutoff.\n",
+      printf("new_dispatcher: cannot open %s.\n",
              path);
     }
     // read time_cutoff

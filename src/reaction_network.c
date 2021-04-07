@@ -40,11 +40,15 @@ ReactionNetwork *new_reaction_network(char *directory, bool logging) {
   file = fopen(path, "r");
   if (!file) {
     if (logging) {
-      printf("new_reaction_network: cannot open %s. Defaulting to file interface", path);
+      printf("new_reaction_network: cannot open %s. Using file interface\n", path);
     }
     return new_reaction_network_from_files(directory, logging);
   } else {
     fclose(file);
+    if (logging) {
+      printf("new_reaction_network: %s found. Using db interface\n", path);
+    }
+
     return new_reaction_network_from_db(directory, logging);
   }
 }
