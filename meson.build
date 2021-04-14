@@ -5,11 +5,15 @@ project(
   license: 'BSD3-Clause-LBNL',
 )
 
-add_project_arguments('-Wno-unused-but-set-variable', language: 'c')
-add_project_arguments('-Wno-unused-variable', language: 'c')
-
 
 cc = meson.get_compiler('c')
+
+add_project_arguments('-Wno-unused-variable', language: 'c')
+
+if cc.get_id() == 'gcc'
+  add_project_arguments('-Wno-unused-but-set-variable', language: 'c')
+endif
+
 gsl_dep = cc.find_library('gsl')
 gslcblas_dep = cc.find_library('gslcblas')
 sqlite = cc.find_library('sqlite3')
