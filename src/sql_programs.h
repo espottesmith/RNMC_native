@@ -1,61 +1,99 @@
 #ifndef SQL_PROGRAMS_H
 #define SQL_PROGRAMS_H
 
-// if reactants and products don't exist, we use the value -1
-static char create_tables[] =
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+#include <dirent.h>
+#include <sys/stat.h>
+#include <sqlite3.h>
+#include "reaction_network.h"
+
+static char reaction_network_db_postix[] = "/rn.sqlite";
+
+static char create_metadata_table_sql[] =
   "CREATE TABLE metadata ("
   "        number_of_species   INTEGER NOT NULL,"
-  "        number_of_reactions INTEGER NOT NULL"
-  ");"
+  "        number_of_reactions INTEGER NOT NULL,"
+  "        shard_size          INTEGER NOT NULL"
+  ");";
 
-  "CREATE TABLE reactions ("
-  "        reaction_id         INTEGER NOT NULL PRIMARY KEY,"
-  "        reaction_string     TEXT NOT NULL,"
-  "        number_of_reactants INTEGER NOT NULL,"
-  "        number_of_products  INTEGER NOT NULL,"
-  "        reactant_1          INTEGER NOT NULL,"
-  "        reactant_2          INTEGER NOT NULL,"
-  "        product_1           INTEGER NOT NULL,"
-  "        product_2           INTEGER NOT NULL,"
-  "        rate                REAL NOT NULL"
-  ");"
-
-  "CREATE UNIQUE INDEX reaction_string_idx ON reactions (reaction_string)";
-
-
-static char insert_metadata[] =
+static char insert_metadata_sql[] =
   "INSERT INTO metadata ("
   "        number_of_species,"
-  "        number_of_reactions)"
-  "VALUES (?1, ?2);";
+  "        number_of_reactions,"
+  "        shard_size) "
+  "VALUES (?1, ?2, ?3);";
 
-
-static char insert_reaction[] =
-  "INSERT INTO reactions ("
-  "        reaction_id,"
-  "        reaction_string,"
-  "        number_of_reactants,"
-  "        number_of_products,"
-  "        reactant_1,"
-  "        reactant_2,"
-  "        product_1,"
-  "        product_2,"
-  "        rate) "
-  "VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9);";
-
-static char get_metadata[] =
+static char get_metadata_sql[] =
   "SELECT * FROM metadata;";
 
-static char get_reactions[] =
-  "SELECT reaction_id,"
-  "       number_of_reactants,"
-  "       number_of_products,"
-  "       reactant_1,"
-  "       reactant_2,"
-  "       product_1,"
-  "       product_2,"
-  "       rate "
-  "FROM reactions;";
 
+char *create_reactions_table_sql(int shard);
+char *insert_reaction_sql(int shard);
+char *get_reaction_sql(int shard);
+
+
+// if reactants and products don't exist, we use the value -1
+
+typedef struct toDatabaseSQL {
+  int number_of_shards;
+  int shard_size;
+  sqlite3 *db;
+  char **create_reactions_table;
+  char **insert_reaction;
+  char *create_metadata_table;
+  char *insert_metadata;
+  sqlite3_stmt **insert_reaction_stmt;
+  sqlite3_stmt *insert_metadata_stmt;
+} ToDatabaseSQL;
+
+
+ToDatabaseSQL *new_to_database_sql(int number_of_shards,
+                                   int shard_size,
+                                   char *directory);
+
+void free_to_database_sql(ToDatabaseSQL *p);
+void insert_metadata(ToDatabaseSQL *p,
+                    int number_of_species,
+                    int number_of_reactions,
+                    int shard_size);
+
+void insert_reaction(ToDatabaseSQL *p,
+                     int reaction_id,
+                     char *reaction_string,
+                     int number_of_reactants,
+                     int number_of_products,
+                     int reactant_1,
+                     int reactant_2,
+                     int product_1,
+                     int product_2,
+                     double rate);
+
+
+typedef struct fromDatabaseSQL {
+  int number_of_shards;
+  int shard_size;
+  int number_of_species;
+  int number_of_reactions;
+  sqlite3 *db;
+  char *get_metadata;
+  char **get_reaction;
+  sqlite3_stmt **get_reaction_stmt;
+  sqlite3_stmt *get_metadata_stmt;
+
+} FromDatabaseSQL;
+
+
+
+FromDatabaseSQL *new_from_database_sql(char *directory);
+
+void free_from_database_sql(FromDatabaseSQL *p);
+
+
+void get_reaction(FromDatabaseSQL *p,
+                  int shard,
+                  ReactionNetwork *rnp
+                  );
 
 #endif
