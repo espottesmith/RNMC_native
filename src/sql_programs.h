@@ -15,15 +15,17 @@ static char create_metadata_table_sql[] =
   "CREATE TABLE metadata ("
   "        number_of_species   INTEGER NOT NULL,"
   "        number_of_reactions INTEGER NOT NULL,"
-  "        shard_size          INTEGER NOT NULL"
+  "        shard_size          INTEGER NOT NULL,"
+  "        number_of_shards    INTEGER NOT NULL"
   ");";
 
 static char insert_metadata_sql[] =
   "INSERT INTO metadata ("
   "        number_of_species,"
   "        number_of_reactions,"
-  "        shard_size) "
-  "VALUES (?1, ?2, ?3);";
+  "        shard_size,"
+  "         number_of_shards) "
+  "VALUES (?1, ?2, ?3, ?4);";
 
 static char get_metadata_sql[] =
   "SELECT * FROM metadata;";
@@ -57,7 +59,8 @@ void free_to_database_sql(ToDatabaseSQL *p);
 void insert_metadata(ToDatabaseSQL *p,
                     int number_of_species,
                     int number_of_reactions,
-                    int shard_size);
+                    int shard_size,
+                    int number_of_shards);
 
 void insert_reaction(ToDatabaseSQL *p,
                      int reaction_id,

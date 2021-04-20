@@ -184,11 +184,13 @@ void free_to_database_sql(ToDatabaseSQL *p) {
 void insert_metadata(ToDatabaseSQL *p,
                     int number_of_species,
                     int number_of_reactions,
-                    int shard_size) {
+                     int shard_size,
+                     int number_of_shards) {
 
   sqlite3_bind_int(p->insert_metadata_stmt, 1, number_of_species);
   sqlite3_bind_int(p->insert_metadata_stmt, 2, number_of_reactions);
   sqlite3_bind_int(p->insert_metadata_stmt, 3, shard_size);
+  sqlite3_bind_int(p->insert_metadata_stmt, 4, number_of_shards);
   sqlite3_step(p->insert_metadata_stmt);
 }
 
@@ -246,7 +248,7 @@ FromDatabaseSQL *new_from_database_sql(char *directory) {
   p->number_of_species = sqlite3_column_int(p->get_metadata_stmt, 0);
   p->number_of_reactions = sqlite3_column_int(p->get_metadata_stmt, 1);
   p->shard_size = sqlite3_column_int(p->get_metadata_stmt, 2);
-  p->number_of_shards = (p->number_of_reactions / p->shard_size) + 1;
+  p->number_of_shards = sqlite3_column_int(p->get_metadata_stmt, 3);
 
   p->get_reaction = malloc(sizeof(char *) * p->number_of_shards);
   for (shard = 0; shard < p->number_of_shards; shard++) {

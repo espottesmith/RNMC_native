@@ -673,7 +673,8 @@ int reaction_network_to_db(ReactionNetwork *rnp, char *directory, int shard_size
   insert_metadata(sql,
                   rnp->number_of_species,
                   rnp->number_of_reactions,
-                  shard_size);
+                  shard_size,
+                  number_of_shards);
 
 
   // insert reactions
