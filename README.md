@@ -33,7 +33,7 @@ Inorder to remain indipendent of any particular language wrapper, RNMC ingests r
 
 See `./test_materials/ronalds_network` for an example (thanks Ronald!)
 
-Alternatively, the first 7 of these files can be wrapped up into a sqlite database. This is useful when dealing with reaction networks with hundreds of millions of reactions. The schema is avaliable in `src/sql_programs.c`.
+Alternatively, the first 7 of these files can be wrapped up into a sqlite database with file name `rn.sqlite`. This is useful when dealing with reaction networks with hundreds of millions of reactions. An example is contained in `./test_materials/ronalds_network_db`. The reactions table has a column `reaction_string`. This column has an index which allows us to efficiently identify duplicate reactions. Because of this index, if the reaction table grows too big, insertions grind to a halt, so we shard the reactions table as demonstrated in the example database, which has shard size 20. In practice, you want to set shard size somewhere between 1 million and 5 million.
 
 
 ### simulation_params

@@ -31,13 +31,14 @@ static char get_metadata_sql[] =
   "SELECT * FROM metadata;";
 
 
+// because of sharding, these sql programs need to be dynamically built.
+// they get generated when toDatabaseSQL and fromDatabaseSQL get initialized
 char *create_reactions_table_sql(int shard);
 char *insert_reaction_sql(int shard);
 char *get_reaction_sql(int shard);
 
 
-// if reactants and products don't exist, we use the value -1
-
+// object to manage state required to serialize a reaction network to db
 typedef struct toDatabaseSQL {
   int number_of_shards;
   int shard_size;
@@ -74,6 +75,7 @@ void insert_reaction(ToDatabaseSQL *p,
                      double rate);
 
 
+// object to manage state required to build a reaction network from db
 typedef struct fromDatabaseSQL {
   int number_of_shards;
   int shard_size;
