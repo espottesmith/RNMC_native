@@ -59,7 +59,6 @@ ReactionNetwork *new_reaction_network_from_db(char *directory, bool logging) {
   char *end;
   char path[2048];
   FILE* file;
-  sqlite3 *db;
   int return_code;
   int i, shard;
   int reaction_index;
@@ -75,25 +74,27 @@ ReactionNetwork *new_reaction_network_from_db(char *directory, bool logging) {
   rnp->number_of_species = sql->number_of_species;
   rnp->number_of_reactions = sql->number_of_reactions;
 
-  // initializing all the arrays to be filled from the database
+  // allocate number of reactants array
   rnp->number_of_reactants = malloc(sizeof(int) * rnp->number_of_reactions);
 
-
+  // allocate reactant array
   int *reactants_values = malloc(sizeof(int) * 2 * rnp->number_of_reactions);
   rnp->reactants = malloc(sizeof(int *) * rnp->number_of_reactions);
   for (i = 0; i < rnp->number_of_reactions; i++) {
     rnp->reactants[i] = reactants_values + 2 * i;
   }
 
+  // allocate number of products array
   rnp->number_of_products = malloc(sizeof(int) * rnp->number_of_reactions);
 
-
+  // allocate products array
   int *products_values = malloc(sizeof(int) * 2 * rnp->number_of_reactions);
   rnp->products = malloc(sizeof(int *) * rnp->number_of_reactions);
   for (i = 0; i < rnp->number_of_reactions; i++) {
     rnp->products[i] = products_values + 2 * i;
   }
 
+  //allocate rates array
   rnp->rates = malloc(sizeof(double) * rnp->number_of_reactions);
 
 
