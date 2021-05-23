@@ -5,6 +5,7 @@ char *number_of_threads_postfix = "/number_of_threads";
 char *seeds_postfix = "/seeds";
 char *time_cutoff_postfix = "/time_cutoff";
 char *step_cutoff_postfix = "/step_cutoff";
+char *sampling_freq_postfix = "/sampling_frequency";
 
 
 SeedQueue *new_seed_queue(int number_of_seeds, unsigned long int *seeds) {
@@ -135,7 +136,19 @@ Dispatcher *new_dispatcher(char *reaction_network_dir,
     fclose(file);
   }
 
-
+  // read sampling_frequency
+  int sampling_frequency;
+  end = stpcpy(path, simulation_params);
+  stpcpy(end, sampling_freq_postfix);
+  file = fopen(path,"r");
+  if (!file) {
+    printf("new_dispatcher: cannot open %s\n",path);
+    sampling_frequency = 1;
+  } else {
+    return_code = fscanf(file, "%d\n", &sampling_frequency);
+    fclose(file);
+  }
+  dp->sampling = sampling_frequency;
 
   dp->threads = malloc(sizeof(pthread_t) * dp->number_of_threads);
   return dp;
@@ -160,7 +173,8 @@ void run_dispatcher(Dispatcher *dp) {
                                dp->sq,
                                dp->cutoff_type,
                                dp->time_cutoff,
-                               dp->step_cutoff);
+                               dp->step_cutoff,
+                               dp->sampling);
     pthread_create(dp->threads + i, NULL, run_simulator, (void *)sp);
   }
 
@@ -179,7 +193,8 @@ SimulatorPayload *new_simulator_payload(ReactionNetwork *rn,
                                         SeedQueue *sq,
                                         CutoffType cutoff_type,
                                         double time_cutoff,
-                                        int step_cutoff
+                                        int step_cutoff,
+                                        int sampling
                                         ) {
 
   SimulatorPayload *spp = malloc(sizeof(SimulatorPayload));
@@ -189,6 +204,7 @@ SimulatorPayload *new_simulator_payload(ReactionNetwork *rn,
   spp->cutoff_type = cutoff_type;
   spp->time_cutoff = time_cutoff;
   spp->step_cutoff = step_cutoff;
+  spp->sampling = sampling;
   return spp;
 }
 
@@ -201,7 +217,7 @@ void *run_simulator(void *simulator_payload) {
   SimulatorPayload *sp = (SimulatorPayload *) simulator_payload;
   unsigned long int seed = get_seed(sp->sq);
   while (seed > 0) {
-    Simulation *simulation = new_simulation(sp->rn, seed, sp->type);
+    Simulation *simulation = new_simulation(sp->rn, seed, sp->type, sp->sampling);
 
     switch (sp->cutoff_type) {
       case time_cutoff:

@@ -111,7 +111,7 @@ bool run_test_simulation() {
   bool flag = true;
   char *ronalds_network_dir = "./ronalds_network";
   ReactionNetwork *rnp = new_reaction_network_from_files(ronalds_network_dir, false);
-  Simulation *sp = new_simulation(rnp, 42, tree);
+  Simulation *sp = new_simulation(rnp, 42, tree, 1);
   run_until(sp, 5);
   simulation_history_to_file(sp);
   char *reaction_cmd = "diff ./test_simulation_histories/reactions_42 ./ronalds_network/simulation_histories/reactions_42 > /dev/null";

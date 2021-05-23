@@ -38,13 +38,15 @@ typedef struct simulation {
   int *state;
   double time;
   int step; // number of reactions which have occurred
+  int sampling; // Frequency at which reactions/times should be logged
   Solve *solver;
   SimulationHistory *history;
 } Simulation;
 
 Simulation *new_simulation(ReactionNetwork *rnp,
                            unsigned long int seed,
-                           SolveType type);
+                           SolveType type,
+                           int sampling);
 
 void free_simulation(Simulation *sp);
 

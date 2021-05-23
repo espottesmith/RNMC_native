@@ -29,6 +29,7 @@ typedef struct dispatcher {
   // number_of_seeds which contains the number of seeds
   // seeds which is a list of new line delimited seeds
   // time_cutoff is how long to run each simulation for (in simulation time)
+  // sampling determines the frequency at which reaction IDs and times will be logged
   SeedQueue *sq;
   int number_of_threads; // length of threads array
   pthread_t *threads;
@@ -36,6 +37,7 @@ typedef struct dispatcher {
   CutoffType cutoff_type;
   double time_cutoff;
   int step_cutoff;
+  int sampling;
 
 } Dispatcher;
 
@@ -51,6 +53,7 @@ typedef struct simulatorPayload {
   CutoffType cutoff_type;
   double time_cutoff;
   int step_cutoff;
+  int sampling;
 } SimulatorPayload;
 
 SimulatorPayload *new_simulator_payload(ReactionNetwork *rn,
@@ -58,7 +61,8 @@ SimulatorPayload *new_simulator_payload(ReactionNetwork *rn,
                                         SeedQueue *sq,
                                         CutoffType cutoff_type,
                                         double time_cutoff,
-                                        int step_cutoff
+                                        int step_cutoff,
+                                        int sampling
                                         );
 
 void free_simulator_payload(SimulatorPayload *sp);

@@ -64,7 +64,8 @@ int simulation_history_length(SimulationHistory *shp) {
 
 Simulation *new_simulation(ReactionNetwork *rnp,
                            unsigned long int seed,
-                           SolveType type) {
+                           SolveType type,
+                           int sampling) {
   int i;
 
 
@@ -84,6 +85,8 @@ Simulation *new_simulation(ReactionNetwork *rnp,
                          rnp->initial_propensities);
 
   sp->history = new_simulation_history();
+
+  sp->sampling = sampling;
 
   return sp;
 }
@@ -182,11 +185,15 @@ void simulation_history_to_file(Simulation *sp) {
   FILE *reaction_file = fopen(reaction_path,"w");
   FILE *time_file = fopen(time_path,"w");
   int i;
+  int j = 1;
   Chunk *chunk = sp->history->first_chunk;
   while (chunk) {
     for (i = 0; i < chunk->next_free_index; i++) {
-      fprintf(reaction_file, "%d\n", chunk->data[i].reaction);
-      fprintf(time_file, "%1.9e\n", chunk->data[i].time);
+      if (j % sp->sampling == 0) {
+        fprintf(reaction_file, "%d\n", chunk->data[i].reaction);
+        fprintf(time_file, "%1.9e\n", chunk->data[i].time);
+      }
+      j++;
     }
     chunk = chunk->next_chunk;
   }
